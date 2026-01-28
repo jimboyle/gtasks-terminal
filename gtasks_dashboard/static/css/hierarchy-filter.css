@@ -1,118 +1,243 @@
 /* 
- * Hierarchy Filter Panel Styles
- * Filter panel styles for the hierarchy visualization
+ * Hierarchy Filter Panel Styles - Unified Design
+ * Now uses the same filter design as Task Management section
  */
 
-/* Hierarchy Chart Filter Panel Styles */
-.hierarchy-filter-panel {
+/* Unified Filter Container - matches .task-filters-container */
+.hierarchy-filters-container {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    overflow: visible;
+    transition: all 0.3s ease;
+}
+
+/* Header: Search + Primary Actions + Toggle */
+.hierarchy-filters-header {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 1px solid #bae6fd;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15);
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid transparent;
+    border-radius: 12px;
+    z-index: 90;
 }
 
-.hierarchy-filter-panel label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #0369a1;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.hierarchy-filters-container:not(.collapsed) .hierarchy-filters-header {
+    border-bottom-color: var(--border-color);
+    border-radius: 12px 12px 0 0;
 }
 
-.hierarchy-filter-panel .filter-input {
-    padding: 8px 12px;
-    border: 1px solid #7dd3fc;
-    border-radius: 6px;
-    font-size: 13px;
-    background-color: #ffffff;
-    color: #0c4a6e;
-    min-width: 180px;
-    transition: all 0.2s ease;
+/* Sticky header */
+.hierarchy-filters-header.sticky-header {
+    position: sticky;
+    position: -webkit-sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
 }
 
-.hierarchy-filter-panel .filter-input:focus {
-    outline: none;
-    border-color: #0284c7;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+/* Search wrapper */
+.hierarchy-search-wrapper {
+    flex: 1;
+    position: relative;
 }
 
-.hierarchy-filter-panel .filter-input::placeholder {
-    color: #94a3b8;
+.hierarchy-search-wrapper input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    transition: all 0.2s;
 }
 
-.hierarchy-filter-panel .filter-select {
-    padding: 8px 12px;
-    border: 1px solid #7dd3fc;
-    border-radius: 6px;
-    font-size: 13px;
-    background-color: #ffffff;
-    color: #0c4a6e;
+.hierarchy-search-wrapper::before {
+    content: "\f002";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    pointer-events: none;
+}
+
+/* Header Select */
+.hierarchy-header-select {
+    padding: 0.6rem 2rem 0.6rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    font-size: 0.9rem;
     cursor: pointer;
     min-width: 140px;
-    transition: all 0.2s ease;
 }
 
-.hierarchy-filter-panel .filter-select:focus {
+/* Toggle Button */
+.hierarchy-btn-icon-only {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.hierarchy-btn-icon-only:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.hierarchy-btn-icon-only.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Expanded Content Grid */
+.hierarchy-filters-content {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 0 0 12px 12px;
+    animation: slideDown 0.3s ease;
+}
+
+.hierarchy-filters-container.collapsed .hierarchy-filters-content {
+    display: none;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Filter Section Labels */
+.hierarchy-filter-section-title {
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Filter Group - matches .filter-group */
+.hierarchy-filter-group {
+    background: transparent;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Section title within filter group - matches the actual HTML structure */
+.hierarchy-filter-group .hierarchy-filter-section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    border-bottom: none;
+}
+
+/* Uniform Input Styling - matches dashboard.css */
+.hierarchy-filters-content .filter-select,
+.hierarchy-filters-content .filter-input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0 0.75rem;
+    background-color: var(--bg-primary);
+    transition: border-color 0.2s;
+}
+
+.hierarchy-filters-content .filter-select:hover,
+.hierarchy-filters-content .filter-input:hover {
+    border-color: var(--primary-color);
+}
+
+.hierarchy-filters-content .filter-select:focus,
+.hierarchy-filters-content .filter-input:focus {
     outline: none;
-    border-color: #0284c7;
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.hierarchy-filter-panel .filter-btn {
-    padding: 8px 16px;
-    border: 1px solid #7dd3fc;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
+/* Date Range Group */
+.hierarchy-date-range-group {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.5rem;
 }
 
-.hierarchy-filter-panel .filter-btn:hover {
-    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+.hierarchy-date-range-group input[type="date"] {
+    flex: 1;
 }
 
-.hierarchy-filter-panel .clear-btn {
-    padding: 8px 16px;
+/* Footer Group - Full Width */
+.hierarchy-filter-group-footer {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Clear Button - matches dashboard.css */
+.hierarchy-clear-btn {
+    width: 100%;
+    justify-content: center;
+    background: #fee2e2;
+    color: #991b1b;
     border: 1px solid #fecaca;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 
-.hierarchy-filter-panel .clear-btn:hover {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+.hierarchy-clear-btn:hover {
+    background: #fecaca;
 }
 
 /* Filter panel in fullscreen mode */
-.viz-container.fullscreen-mode .hierarchy-filter-panel {
+.viz-container.fullscreen-mode .hierarchy-filters-container {
     position: absolute;
     top: 16px;
     left: 16px;
     right: 16px;
-    z-index: 100;
     max-width: 600px;
     margin: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

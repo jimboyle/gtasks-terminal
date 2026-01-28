@@ -311,3 +311,26 @@
 .dark-mode #task-clear-filters:hover i {
     color: white !important;
 }
+
+/* Tag Cards on Tags Page */
+.dark-mode .tag-card {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .tag-card-header .tag-name {
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .tag-card .tag-description {
+    color: var(--text-secondary) !important;
+}
+
+.dark-mode .tag-card .tag-icon {
+    border-color: var(--border-color) !important;
+}
+
+.dark-mode .tag-card .tag-meta {
+    border-top-color: var(--border-color) !important;
+}

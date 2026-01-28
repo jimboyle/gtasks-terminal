@@ -13,12 +13,15 @@ Date: January 12, 2026
 
 import os
 import sys
+import json
 from pathlib import Path
+from datetime import datetime
 
 # Add current directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from flask import Flask, redirect, request
+from flask import Flask, redirect, request, render_template, session, jsonify
 
 # Import feature flags to display available features
 from config import FEATURE_FLAGS
@@ -85,6 +88,12 @@ def tasks_page_local():
     """Tasks page - shows task management view (local development)"""
     from routes.dashboard import render_dashboard
     return render_dashboard(view='tasks', base_path='')
+
+
+@app.route('/tags')
+def tags_page_local():
+    """Tags page - shows tags management view (local development)"""
+    return render_template('tags.html', base_path='')
 
 
 @app.route('/favicon.ico')
@@ -502,6 +511,1081 @@ def api_last_update_root():
     """Get last update timestamp (local development)"""
     from routes.api import api_last_update
     return api_last_update()
+
+
+# Tags Import Routes (local development)
+@app.route('/api/tags', methods=['GET'])
+def api_tags_root():
+    """Get all tags (local development)"""
+    from routes.api import api_tags
+    return api_tags()
+
+
+@app.route('/api/tags/dry-run', methods=['POST'])
+def api_tags_dry_run_root():
+    """Preview tags that will be imported (local development)"""
+    from routes.api import api_tags_dry_run
+    return api_tags_dry_run()
+
+
+@app.route('/api/tags/import', methods=['POST'])
+def api_tags_import_root():
+    """Import tags from Google Tasks (local development)"""
+    from routes.api import api_tags_import
+    return api_tags_import()
+
+
+@app.route('/api/tags/statistics', methods=['GET'])
+def api_tags_statistics_root():
+    """Get tag statistics (local development)"""
+    from routes.api import api_tags_statistics
+    return api_tags_statistics()
+
+
+@app.route('/api/tags/sync', methods=['POST'])
+def api_tags_sync_root():
+    """Sync tags with tasks (local development)"""
+    from routes.api import api_tags_sync
+    return api_tags_sync()
+
+
+@app.route('/api/connections', methods=['GET'])
+def api_connections_root():
+    """Get all user connections (local development)"""
+    from routes.api import api_connections
+    return api_connections()
+
+
+# End of local development routes
+
+
+# ============================================
+# Authentication Routes
+# ============================================
+
+# Configure secret key for sessions
+app.secret_key = os.environ.get('SESSION_SECRET', 'gtasks-dashboard-secret-key-2026')
+
+
+def get_base_path():
+    """Get the base path for routes"""
+    return os.environ.get('SCRIPT_NAME', BASE_PATH)
+
+
+@app.route(f'{BASE_PATH}/login')
+def login_page():
+    """Render login page"""
+    # Check if user is already logged in
+    if 'user_id' in session:
+        return render_template('login.html', base_path=get_base_path(), success='You are already logged in!')
+    return render_template('login.html', base_path=get_base_path())
+
+
+@app.route(f'{BASE_PATH}/login', methods=['POST'])
+def login():
+    """Handle login with QERDS API key"""
+    from gtasks_cli.services.auth_service import AuthService
+    
+    email = request.form.get('email', '').strip().lower()
+    api_key = request.form.get('api_key', '').strip()
+    
+    if not email or not api_key:
+        return render_template('login.html', base_path=get_base_path(), error='Email and API key are required')
+    
+    try:
+        auth_service = AuthService()
+        result = auth_service.login(email=email, api_key=api_key, is_dummy=False)
+        
+        if result['success']:
+            # Store session
+            session['user_id'] = result['user']['user_id']
+            session['email'] = result['user']['email']
+            session['is_dummy'] = False
+            return render_template('login.html', base_path=get_base_path(), success=f"Welcome back, {result['user']['email']}!")
+        else:
+            return render_template('login.html', base_path=get_base_path(), error=result.get('error', 'Login failed'))
+    except Exception as e:
+        return render_template('login.html', base_path=get_base_path(), error=f'Login failed: {str(e)}')
+
+
+@app.route(f'{BASE_PATH}/login/dummy', methods=['POST'])
+def login_dummy():
+    """Handle dummy login for testing"""
+    from gtasks_cli.services.auth_service import AuthService
+    
+    email = request.form.get('email', '').strip().lower()
+    
+    if not email:
+        email = 'demo@example.com'
+    
+    try:
+        auth_service = AuthService()
+        result = auth_service.login(email=email, api_key='dummy-key', is_dummy=True)
+        
+        if result['success']:
+            # Store session
+            session['user_id'] = result['user']['user_id']
+            session['email'] = result['user']['email']
+            session['is_dummy'] = True
+            return render_template('login.html', base_path=get_base_path(), success=f"Welcome to demo mode, {result['user']['email']}!")
+        else:
+            return render_template('login.html', base_path=get_base_path(), error=result.get('error', 'Demo login failed'))
+    except Exception as e:
+        return render_template('login.html', base_path=get_base_path(), error=f'Demo login failed: {str(e)}')
+
+
+@app.route(f'{BASE_PATH}/logout', methods=['POST'])
+def logout():
+    """Handle logout"""
+    from gtasks_cli.services.auth_service import AuthService
+    
+    user_id = session.get('user_id')
+    
+    if user_id:
+        try:
+            auth_service = AuthService()
+            auth_service.logout(user_id)
+        except Exception as e:
+            pass  # Ignore logout errors
+    
+    # Clear session
+    session.clear()
+    
+    return render_template('login.html', base_path=get_base_path(), success='You have been logged out')
+
+
+@app.route(f'{BASE_PATH}/api/auth/status')
+def auth_status():
+    """Get current authentication status"""
+    if 'user_id' in session:
+        from gtasks_cli.services.auth_service import AuthService
+        
+        auth_service = AuthService()
+        user = auth_service.get_user(session['user_id'])
+        
+        if user:
+            return jsonify({
+                'authenticated': True,
+                'user': user.to_dict() if hasattr(user, 'to_dict') else dict(user),
+                'is_dummy': session.get('is_dummy', False)
+            })
+    
+    return jsonify({'authenticated': False})
+
+
+# ============================================
+# Shared Tasks Routes (BASE_PATH)
+# ============================================
+
+@app.route(f'{BASE_PATH}/api/shared-tasks')
+def api_shared_tasks():
+    """Get tasks shared with the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    tasks = service.get_tasks_for_user(session['user_id'])
+    
+    return jsonify({
+        'shared_tasks': tasks,
+        'count': len(tasks)
+    })
+
+
+@app.route(f'{BASE_PATH}/api/shared-tasks/pending')
+def api_pending_shared_tasks():
+    """Get pending tasks for the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    tasks = service.get_pending_tasks_for_user(session['user_id'])
+    
+    return jsonify({
+        'pending_tasks': tasks,
+        'count': len(tasks)
+    })
+
+
+@app.route(f'{BASE_PATH}/api/shared-tasks/<task_id>/complete', methods=['POST'])
+def api_complete_shared_task(task_id):
+    """Mark a shared task as complete for the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    result = service.mark_task_complete(task_id, session['user_id'])
+    
+    return jsonify(result)
+
+
+@app.route(f'{BASE_PATH}/api/shared-tasks/stats')
+def api_shared_tasks_stats():
+    """Get shared tasks statistics"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    stats = service.get_overall_stats()
+    
+    return jsonify(stats)
+
+
+# ============================================
+# Invitation Routes (BASE_PATH)
+# ============================================
+
+@app.route(f'{BASE_PATH}/api/invitations/pending')
+def api_pending_invitations():
+    """Get pending invitations for the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    invitations = service.get_pending_invitations(session['user_id'])
+    
+    return jsonify({
+        'invitations': invitations,
+        'count': len(invitations)
+    })
+
+
+@app.route(f'{BASE_PATH}/api/invitations/sent')
+def api_sent_invitations():
+    """Get sent invitations by the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    invitations = service.get_sent_invitations(session['user_id'])
+    
+    return jsonify({
+        'invitations': invitations,
+        'count': len(invitations)
+    })
+
+
+@app.route(f'{BASE_PATH}/api/invitations/<invitation_id>/accept', methods=['POST'])
+def api_accept_invitation(invitation_id):
+    """Accept an invitation"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    result = service.accept_invitation(invitation_id, session['user_id'])
+    
+    return jsonify(result)
+
+
+@app.route(f'{BASE_PATH}/api/invitations/<invitation_id>/reject', methods=['POST'])
+def api_reject_invitation(invitation_id):
+    """Reject an invitation"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    result = service.reject_invitation(invitation_id, session['user_id'])
+    
+    return jsonify(result)
+
+
+@app.route(f'{BASE_PATH}/api/invitations/create', methods=['POST'])
+def api_create_invitation():
+    """Create a new invitation"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    data = request.get_json()
+    
+    from_email = data.get('from_email', session.get('email'))
+    to_email = data.get('to_email')
+    task_id = data.get('task_id')
+    message = data.get('message', '')
+    
+    if not to_email or not task_id:
+        return jsonify({'success': False, 'error': 'to_email and task_id are required'}), 400
+    
+    service = InvitationService()
+    result = service.create_invitation(
+        from_user_id=session['user_id'],
+        from_email=from_email,
+        to_email=to_email,
+        task_id=task_id,
+        message=message
+    )
+    
+    if result['success']:
+        # Send invitation email
+        service.send_invitation_email(result['invitation_id'])
+    
+    return jsonify(result)
+
+
+# ============================================
+# Account Tags Routes (BASE_PATH)
+# ============================================
+
+@app.route(f'{BASE_PATH}/api/account-tags')
+def api_account_tags():
+    """Get account tags for the current user"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.account_tag_service import AccountTagService
+    
+    service = AccountTagService()
+    tags = service.get_user_account_tags(session['user_id'])
+    
+    return jsonify({
+        'account_tags': tags,
+        'count': len(tags)
+    })
+
+
+@app.route(f'{BASE_PATH}/api/account-tags/parse', methods=['POST'])
+def api_parse_account_tags():
+    """Parse account tags from text"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.account_tag_service import AccountTagService
+    
+    data = request.get_json()
+    text = data.get('text', '')
+    
+    service = AccountTagService()
+    tags = service.parse_account_tags(text)
+    
+    return jsonify({
+        'account_tags': tags,
+        'count': len(tags)
+    })
+
+
+# End of shared tasks and invitations routes (BASE_PATH)
+
+
+# Local development authentication routes
+
+@app.route('/login')
+def login_page_root():
+    """Render login page (local development)"""
+    if 'user_id' in session:
+        return render_template('login.html', base_path='', success='You are already logged in!')
+    return render_template('login.html', base_path='')
+
+
+@app.route('/login', methods=['POST'])
+def login_root():
+    """Handle login with QERDS API key (local development)"""
+    from gtasks_cli.services.auth_service import AuthService
+    
+    email = request.form.get('email', '').strip().lower()
+    api_key = request.form.get('api_key', '').strip()
+    
+    if not email or not api_key:
+        return render_template('login.html', base_path='', error='Email and API key are required')
+    
+    try:
+        auth_service = AuthService()
+        result = auth_service.login(email=email, api_key=api_key, is_dummy=False)
+        
+        if result['success']:
+            session['user_id'] = result['user']['user_id']
+            session['email'] = result['user']['email']
+            session['is_dummy'] = False
+            return render_template('login.html', base_path='', success=f"Welcome back, {result['user']['email']}!")
+        else:
+            return render_template('login.html', base_path='', error=result.get('error', 'Login failed'))
+    except Exception as e:
+        return render_template('login.html', base_path='', error=f'Login failed: {str(e)}')
+
+
+@app.route('/login/dummy', methods=['POST'])
+def login_dummy_root():
+    """Handle dummy login for testing (local development)"""
+    from gtasks_cli.services.auth_service import AuthService
+    
+    email = request.form.get('email', '').strip().lower()
+    
+    if not email:
+        email = 'demo@example.com'
+    
+    try:
+        auth_service = AuthService()
+        result = auth_service.login(email=email, api_key='dummy-key', is_dummy=True)
+        
+        if result['success']:
+            session['user_id'] = result['user']['user_id']
+            session['email'] = result['user']['email']
+            session['is_dummy'] = True
+            return render_template('login.html', base_path='', success=f"Welcome to demo mode, {result['user']['email']}!")
+        else:
+            return render_template('login.html', base_path='', error=result.get('error', 'Demo login failed'))
+    except Exception as e:
+        return render_template('login.html', base_path='', error=f'Demo login failed: {str(e)}')
+
+
+@app.route('/logout', methods=['POST'])
+def logout_root():
+    """Handle logout (local development)"""
+    from gtasks_cli.services.auth_service import AuthService
+    
+    user_id = session.get('user_id')
+    
+    if user_id:
+        try:
+            auth_service = AuthService()
+            auth_service.logout(user_id)
+        except Exception as e:
+            pass
+    
+    session.clear()
+    return render_template('login.html', base_path='', success='You have been logged out')
+
+
+@app.route('/api/auth/status')
+def auth_status_root():
+    """Get current authentication status (local development)"""
+    if 'user_id' in session:
+        from gtasks_cli.services.auth_service import AuthService
+        
+        auth_service = AuthService()
+        user = auth_service.get_user(session['user_id'])
+        
+        if user:
+            return jsonify({
+                'authenticated': True,
+                'user': user.to_dict() if hasattr(user, 'to_dict') else dict(user),
+                'is_dummy': session.get('is_dummy', False)
+            })
+    
+    return jsonify({'authenticated': False})
+
+
+# ============================================
+# Shared Tasks Routes (local development)
+# ============================================
+
+@app.route('/api/shared-tasks')
+def api_shared_tasks_root():
+    """Get tasks shared with the current user (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    tasks = service.get_tasks_for_user(session['user_id'])
+    
+    return jsonify({
+        'shared_tasks': tasks,
+        'count': len(tasks)
+    })
+
+
+@app.route('/api/shared-tasks/pending')
+def api_pending_shared_tasks_root():
+    """Get pending tasks for the current user (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    tasks = service.get_pending_tasks_for_user(session['user_id'])
+    
+    return jsonify({
+        'pending_tasks': tasks,
+        'count': len(tasks)
+    })
+
+
+@app.route('/api/shared-tasks/<task_id>/complete', methods=['POST'])
+def api_complete_shared_task_root(task_id):
+    """Mark a shared task as complete for the current user (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    result = service.mark_task_complete(task_id, session['user_id'])
+    
+    return jsonify(result)
+
+
+@app.route('/api/shared-tasks/stats')
+def api_shared_tasks_stats_root():
+    """Get shared tasks statistics (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.task_sharing_service import TaskSharingService
+    
+    service = TaskSharingService()
+    stats = service.get_overall_stats()
+    
+    return jsonify(stats)
+
+
+# ============================================
+# Invitation Routes (local development)
+# ============================================
+
+@app.route('/api/invitations/pending')
+def api_pending_invitations_root():
+    """Get pending invitations for the current user (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    invitations = service.get_pending_invitations(session['user_id'])
+    
+    return jsonify({
+        'invitations': invitations,
+        'count': len(invitations)
+    })
+
+
+@app.route('/api/invitations/sent')
+def api_sent_invitations_root():
+    """Get sent invitations by the current user (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    invitations = service.get_sent_invitations(session['user_id'])
+    
+    return jsonify({
+        'invitations': invitations,
+        'count': len(invitations)
+    })
+
+
+@app.route('/api/invitations/<invitation_id>/accept', methods=['POST'])
+def api_accept_invitation_root(invitation_id):
+    """Accept an invitation (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    result = service.accept_invitation(invitation_id, session['user_id'])
+    
+    return jsonify(result)
+
+
+@app.route('/api/invitations/<invitation_id>/reject', methods=['POST'])
+def api_reject_invitation_root(invitation_id):
+    """Reject an invitation (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    service = InvitationService()
+    result = service.reject_invitation(invitation_id, session['user_id'])
+    
+    return jsonify(result)
+
+
+@app.route('/api/invitations/create', methods=['POST'])
+def api_create_invitation_root():
+    """Create a new invitation (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.invitation_service import InvitationService
+    
+    data = request.get_json()
+    
+    from_email = data.get('from_email', session.get('email'))
+    to_email = data.get('to_email')
+    task_id = data.get('task_id')
+    message = data.get('message', '')
+    
+    if not to_email or not task_id:
+        return jsonify({'success': False, 'error': 'to_email and task_id are required'}), 400
+    
+    service = InvitationService()
+    result = service.create_invitation(
+        from_user_id=session['user_id'],
+        from_email=from_email,
+        to_email=to_email,
+        task_id=task_id,
+        message=message
+    )
+    
+    if result['success']:
+        # Send invitation email
+        service.send_invitation_email(result['invitation_id'])
+    
+    return jsonify(result)
+
+
+# ============================================
+# Account Tags Routes (local development)
+# ============================================
+
+@app.route('/api/account-tags')
+def api_account_tags_root():
+    """Get account tags for the current user (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.account_tag_service import AccountTagService
+    
+    service = AccountTagService()
+    tags = service.get_user_account_tags(session['user_id'])
+    
+    return jsonify({
+        'account_tags': tags,
+        'count': len(tags)
+    })
+
+
+@app.route('/api/account-tags/parse', methods=['POST'])
+def api_parse_account_tags_root():
+    """Parse account tags from text (local development)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    from gtasks_cli.services.account_tag_service import AccountTagService
+    
+    data = request.get_json()
+    text = data.get('text', '')
+    
+    service = AccountTagService()
+    tags = service.parse_account_tags(text)
+    
+    return jsonify({
+        'account_tags': tags,
+        'count': len(tags)
+    })
+
+
+# ============================================
+# TASK MODAL ROUTES
+# ============================================
+
+@app.route(f'{BASE_PATH}/task/new')
+def task_modal_page():
+    """Render task creation modal page"""
+    return render_template('task-modal.html', base_path=get_base_path())
+
+
+@app.route(f'{BASE_PATH}/task/<task_id>/edit')
+def task_edit_page(task_id):
+    """Render task edit modal page"""
+    return render_template('task-modal.html', base_path=get_base_path(), task_id=task_id)
+
+
+# ============================================
+# NEW API ENDPOINTS FOR TASKS (local development)
+# ============================================
+
+@app.route('/api/invitations/send', methods=['POST'])
+def api_send_invitation_root():
+    """Send an invitation to connect (local development)"""
+    from routes.api import api_send_invitation
+    return api_send_invitation()
+
+
+@app.route('/api/invitations/accept/<invitation_id>', methods=['POST'])
+def api_accept_invitation_page_root(invitation_id):
+    """Accept an invitation (local development)"""
+    from routes.api import api_accept_invitation
+    return api_accept_invitation(invitation_id)
+
+
+@app.route('/api/connected-accounts')
+def api_connected_accounts_root():
+    """Get connected accounts (local development)"""
+    from routes.api import api_connected_accounts
+    return api_connected_accounts()
+
+
+# ============================================
+# NEW API ENDPOINTS FOR TASKS (BASE_PATH)
+# ============================================
+
+@app.route(f'{BASE_PATH}/api/invitations/send', methods=['POST'])
+def api_send_invitation_base():
+    """Send an invitation to connect (BASE_PATH)"""
+    from routes.api import api_send_invitation
+    return api_send_invitation()
+
+
+@app.route(f'{BASE_PATH}/api/invitations/accept/<invitation_id>', methods=['POST'])
+def api_accept_invitation_page_base(invitation_id):
+    """Accept an invitation (BASE_PATH)"""
+    from routes.api import api_accept_invitation
+    return api_accept_invitation(invitation_id)
+
+
+@app.route(f'{BASE_PATH}/api/connected-accounts')
+def api_connected_accounts_base():
+    """Get connected accounts (BASE_PATH)"""
+    from routes.api import api_connected_accounts
+    return api_connected_accounts()
+
+
+# ============================================
+# TAGS MANAGEMENT ROUTES
+# ============================================
+
+@app.route(f'{BASE_PATH}/tags')
+def tags_page():
+    """Render tags management page"""
+    return render_template('tags.html', base_path=get_base_path())
+
+
+@app.route(f'{BASE_PATH}/tags/<tag_name>')
+def tag_tasks_page(tag_name):
+    """Render page showing tasks with a specific tag"""
+    return render_template('tags.html', base_path=get_base_path(), view='tag-tasks', tag_name=tag_name)
+
+
+@app.route(f'{BASE_PATH}/api/tags', methods=['GET'])
+def api_get_tags():
+    """Get all tags"""
+    from routes.api import api_tags
+    return api_tags()
+
+
+@app.route(f'{BASE_PATH}/api/tags', methods=['POST'])
+def api_create_tag():
+    """Create a new tag"""
+    data = request.get_json()
+    
+    try:
+        tag_name = data.get('name', '').strip()
+        tag_type = data.get('type', 'regular')
+        color = data.get('color', 'blue')
+        description = data.get('description', '')
+        
+        if not tag_name:
+            return jsonify({
+                'success': False,
+                'message': 'Tag name is required'
+            }), 400
+        
+        # Create tag
+        tag = {
+            'id': f"tag_{len(_dashboard_state.get('tags', [])) + 1}",
+            'tag_name': tag_name,
+            'tag_type': tag_type,
+            'color': color,
+            'description': description,
+            'created_at': datetime.now().isoformat()
+        }
+        
+        # Store tag
+        if 'tags' not in _dashboard_state:
+            _dashboard_state['tags'] = {}
+        
+        if tag_type == 'account':
+            if 'account_tags' not in _dashboard_state['tags']:
+                _dashboard_state['tags']['account_tags'] = []
+            _dashboard_state['tags']['account_tags'].append(tag)
+        else:
+            if 'regular_tags' not in _dashboard_state['tags']:
+                _dashboard_state['tags']['regular_tags'] = []
+            _dashboard_state['tags']['regular_tags'].append(tag)
+        
+        return jsonify({
+            'success': True,
+            'tag': tag,
+            'message': 'Tag created successfully'
+        })
+        
+    except Exception as e:
+        print(f'[API] Error creating tag: {e}')
+        return jsonify({
+            'success': False,
+            'message': f'Error creating tag: {str(e)}'
+        }), 500
+
+
+@app.route(f'{BASE_PATH}/api/tags/<tag_id>', methods=['PUT'])
+def api_update_tag(tag_id):
+    """Update an existing tag"""
+    data = request.get_json()
+    
+    try:
+        tag_name = data.get('name', '').strip()
+        color = data.get('color')
+        description = data.get('description')
+        
+        # Find and update tag
+        tags = _dashboard_state.get('tags', {})
+        account_tags = tags.get('account_tags', [])
+        regular_tags = tags.get('regular_tags', [])
+        
+        for tag_list in [account_tags, regular_tags]:
+            for tag in tag_list:
+                if tag.get('id') == tag_id or tag.get('tag_name') == tag_id:
+                    if tag_name:
+                        tag['tag_name'] = tag_name
+                    if color:
+                        tag['color'] = color
+                    if description is not None:
+                        tag['description'] = description
+                    tag['updated_at'] = datetime.now().isoformat()
+                    
+                    return jsonify({
+                        'success': True,
+                        'tag': tag,
+                        'message': 'Tag updated successfully'
+                    })
+        
+        return jsonify({
+            'success': False,
+            'message': 'Tag not found'
+        }), 404
+        
+    except Exception as e:
+        print(f'[API] Error updating tag: {e}')
+        return jsonify({
+            'success': False,
+            'message': f'Error updating tag: {str(e)}'
+        }), 500
+
+
+@app.route(f'{BASE_PATH}/api/tags/<tag_id>', methods=['DELETE'])
+def api_delete_tag(tag_id):
+    """Delete a tag"""
+    try:
+        tags = _dashboard_state.get('tags', {})
+        account_tags = tags.get('account_tags', [])
+        regular_tags = tags.get('regular_tags', [])
+        
+        # Find and remove tag
+        for i, tag in enumerate(account_tags):
+            if tag.get('id') == tag_id or tag.get('tag_name') == tag_id:
+                account_tags.pop(i)
+                return jsonify({
+                    'success': True,
+                    'message': 'Tag deleted successfully'
+                })
+        
+        for i, tag in enumerate(regular_tags):
+            if tag.get('id') == tag_id or tag.get('tag_name') == tag_id:
+                regular_tags.pop(i)
+                return jsonify({
+                    'success': True,
+                    'message': 'Tag deleted successfully'
+                })
+        
+        return jsonify({
+            'success': False,
+            'message': 'Tag not found'
+        }), 404
+        
+    except Exception as e:
+        print(f'[API] Error deleting tag: {e}')
+        return jsonify({
+            'success': False,
+            'message': f'Error deleting tag: {str(e)}'
+        }), 500
+
+
+# ============================================
+# SETTINGS ROUTES
+# ============================================
+
+@app.route(f'{BASE_PATH}/settings')
+def settings_page():
+    """Render settings page"""
+    return render_template('settings.html', base_path=get_base_path())
+
+
+@app.route(f'{BASE_PATH}/settings/tags-import')
+def settings_tags_import():
+    """Render settings page with Tags Import section"""
+    return render_template('settings.html', base_path=get_base_path(), section='tags-import')
+
+
+@app.route(f'{BASE_PATH}/settings/tags-management')
+def settings_tags_management():
+    """Render settings page with Tags Management section"""
+    return render_template('settings.html', base_path=get_base_path(), section='tags-management')
+
+
+@app.route(f'{BASE_PATH}/settings/connected-accounts')
+def settings_connected_accounts():
+    """Render settings page with Connected Accounts section"""
+    return render_template('settings.html', base_path=get_base_path(), section='connected-accounts')
+
+
+@app.route(f'{BASE_PATH}/settings/remote-sync')
+def settings_remote_sync():
+    """Render settings page with Remote Sync section"""
+    return render_template('settings.html', base_path=get_base_path(), section='remote-sync')
+
+
+@app.route(f'{BASE_PATH}/api/settings', methods=['GET'])
+def api_get_settings():
+    """Get user settings"""
+    try:
+        # Get settings from state or defaults
+        settings = _dashboard_state.get('settings', {
+            'auto_refresh': True,
+            'refresh_interval': 60,
+            'default_view': 'dashboard',
+            'hide_deleted': True
+        })
+        
+        return jsonify({
+            'success': True,
+            'settings': settings
+        })
+    except Exception as e:
+        print(f'[API] Error getting settings: {e}')
+        return jsonify({
+            'success': False,
+            'message': f'Error getting settings: {str(e)}'
+        }), 500
+
+
+@app.route(f'{BASE_PATH}/api/settings', methods=['POST'])
+def api_save_settings():
+    """Save user settings"""
+    data = request.get_json()
+    
+    try:
+        # Update settings
+        _dashboard_state['settings'] = {
+            'auto_refresh': data.get('auto_refresh', True),
+            'refresh_interval': data.get('refresh_interval', 60),
+            'default_view': data.get('default_view', 'dashboard'),
+            'hide_deleted': data.get('hide_deleted', True)
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': 'Settings saved successfully'
+        })
+        
+    except Exception as e:
+        print(f'[API] Error saving settings: {e}')
+        return jsonify({
+            'success': False,
+            'message': f'Error saving settings: {str(e)}'
+        }), 500
+
+
+# ============================================
+# SETTINGS ROUTES (local development)
+# ============================================
+
+@app.route('/settings')
+def settings_page_local():
+    """Render settings page (local development)"""
+    return render_template('settings.html', base_path='')
+
+
+@app.route('/settings/tags-import')
+def settings_tags_import_local():
+    """Render settings page with Tags Import section (local development)"""
+    return render_template('settings.html', base_path='', section='tags-import')
+
+
+@app.route('/settings/tags-management')
+def settings_tags_management_local():
+    """Render settings page with Tags Management section (local development)"""
+    return render_template('settings.html', base_path='', section='tags-management')
+
+
+@app.route('/settings/connected-accounts')
+def settings_connected_accounts_local():
+    """Render settings page with Connected Accounts section (local development)"""
+    return render_template('settings.html', base_path='', section='connected-accounts')
+
+
+@app.route('/settings/remote-sync')
+def settings_remote_sync_local():
+    """Render settings page with Remote Sync section (local development)"""
+    return render_template('settings.html', base_path='', section='remote-sync')
+
+
+@app.route('/api/settings', methods=['GET'])
+def api_get_settings_local():
+    """Get user settings (local development)"""
+    return api_get_settings()
+
+
+@app.route('/api/settings', methods=['POST'])
+def api_save_settings_local():
+    """Save user settings (local development)"""
+    return api_save_settings()
+
+
+# ============================================
+# TAGS MANAGEMENT ROUTES (local development)
+# ============================================
+
+@app.route('/api/tags', methods=['POST'])
+def api_create_tag_local():
+    """Create a new tag (local development)"""
+    return api_create_tag()
+
+
+@app.route('/api/tags/<tag_id>', methods=['PUT'])
+def api_update_tag_local(tag_id):
+    """Update an existing tag (local development)"""
+    return api_update_tag(tag_id)
+
+
+@app.route('/api/tags/<tag_id>', methods=['DELETE'])
+def api_delete_tag_local(tag_id):
+    """Delete a tag (local development)"""
+    return api_delete_tag(tag_id)
+
+
+# ============================================
+# TASK MODAL ROUTES
+# ============================================
+
+@app.route('/task/new')
+def task_modal_page_local():
+    """Render task creation modal page (local development)"""
+    return render_template('task-modal.html', base_path='')
+
+
+@app.route('/task/<task_id>/edit')
+def task_edit_page_local(task_id):
+    """Render task edit modal page (local development)"""
+    return render_template('task-modal.html', base_path='', task_id=task_id)
+
+
+# ============================================
+# NEW API ENDPOINTS FOR TASKS (local development)
+# ============================================
 
 # End of local development routes
 

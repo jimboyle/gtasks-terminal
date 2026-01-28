@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add/Edit Task - GTasks</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/task-modal.css">
+</head>
+<body>
+    <div class="modal-overlay" id="task-modal-overlay">
+        <div class="modal-content task-modal-content">
+            <div class="modal-header">
+                <h2 id="task-modal-title"><i class="fas fa-plus-circle"></i> Add New Task</h2>
+                <button class="modal-close" id="task-modal-close">&times;</button>
+            </div>
+            
+            <form id="task-form" class="task-form">
+                <input type="hidden" id="task-id" name="task_id" value="{{ task_id|default('') }}">
+                <input type="hidden" id="task-account-id" name="account_id">
+                <input type="hidden" id="task-list-id" name="task_list_id">
+                
+                <!-- Title -->
+                <div class="form-group">
+                    <label for="task-title">
+                        <i class="fas fa-heading"></i> Title <span class="required">*</span>
+                    </label>
+                    <input type="text" id="task-title" name="title" required 
+                           placeholder="Enter task title..." maxlength="200">
+                </div>
+                
+                <!-- Notes -->
+                <div class="form-group">
+                    <label for="task-notes">
+                        <i class="fas fa-align-left"></i> Notes
+                    </label>
+                    <textarea id="task-notes" name="notes" rows="4" 
+                              placeholder="Add task description, notes, or details..."></textarea>
+                </div>
+                
+                <!-- Due Date -->
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label for="task-due-date">
+                            <i class="fas fa-calendar-alt"></i> Due Date
+                        </label>
+                        <input type="date" id="task-due-date" name="due_date">
+                    </div>
+                    
+                    <!-- Priority -->
+                    <div class="form-group half">
+                        <label>
+                            <i class="fas fa-flag"></i> Priority
+                        </label>
+                        <div class="priority-selector">
+                            <button type="button" class="priority-btn" data-priority="none">None</button>
+                            <button type="button" class="priority-btn" data-priority="low">Low</button>
+                            <button type="button" class="priority-btn" data-priority="medium">Medium</button>
+                            <button type="button" class="priority-btn" data-priority="high">High</button>
+                            <button type="button" class="priority-btn" data-priority="critical">Critical</button>
+                        </div>
+                        <input type="hidden" id="task-priority" name="priority" value="none">
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="form-group">
+                    <label for="task-status">
+                        <i class="fas fa-tasks"></i> Status
+                    </label>
+                    <select id="task-status" name="status">
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                
+                <!-- Tags with Autocomplete -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-tags"></i> Tags
+                        <span class="help-text">(Type @ to add account tags, # for regular tags)</span>
+                    </label>
+                    <div class="tags-input-container">
+                        <div class="tags-display" id="tags-display">
+                            <!-- Selected tags will be displayed here -->
+                        </div>
+                        <input type="text" id="task-tags-input" 
+                               placeholder="Type @ for account tags, # for regular tags..." 
+                               autocomplete="off">
+                        <div class="tags-autocomplete-dropdown" id="tags-autocomplete" style="display: none;">
+                            <!-- Autocomplete suggestions will appear here -->
+                        </div>
+                    </div>
+                    <input type="hidden" id="task-tags-hidden" name="tags">
+                </div>
+                
+                <!-- Completion Status (shown when editing) -->
+                <div class="form-group" id="completion-status-group" style="display: none;">
+                    <label>
+                        <i class="fas fa-check-double"></i> Completion Status
+                        <span class="help-text">(Track completion per account)</span>
+                    </label>
+                    <div id="task-completion-status">
+                        <!-- Completion status will be displayed here -->
+                    </div>
+                    <button type="button" class="btn btn-sm btn-primary" id="mark-complete-btn" onclick="markCurrentUserComplete()">
+                        <i class="fas fa-check"></i> Mark as Complete (Me)
+                    </button>
+                </div>
+                
+                <!-- Task List -->
+                <div class="form-group">
+                    <label for="task-list">
+                        <i class="fas fa-list"></i> Task List
+                    </label>
+                    <select id="task-list" name="task_list">
+                        <option value="">Loading task lists...</option>
+                    </select>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="task-modal-cancel">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-primary" id="task-submit-btn">
+                        <i class="fas fa-plus"></i> Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Invitation Modal -->
+    <div class="modal-overlay" id="invitation-modal-overlay" style="display: none;">
+        <div class="modal-content invitation-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Send Invitation</h2>
+                <button class="modal-close" onclick="closeInvitationModal()">&times;</button>
+            </div>
+            
+            <div class="invitation-content">
+                <p class="invitation-message">
+                    The account <strong id="invitation-tag-display"></strong> doesn't exist yet.
+                    Would you like to send an invitation to connect?
+                </p>
+                
+                <div class="form-group">
+                    <label for="invitation-email">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input type="email" id="invitation-email" 
+                           placeholder="Enter email address to send invitation...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="invitation-message">
+                        <i class="fas fa-comment"></i> Message (Optional)
+                    </label>
+                    <textarea id="invitation-message" rows="3" 
+                              placeholder="Add a personal message to the invitation..."></textarea>
+                </div>
+                
+                <div class="invitation-preview">
+                    <h4>Invitation Preview</h4>
+                    <div class="preview-content">
+                        <p><strong>From:</strong> <span id="preview-from">You</span></p>
+                        <p><strong>To:</strong> <span id="preview-to">(enter email)</span></p>
+                        <p><strong>Message:</strong> <span id="preview-message"></span></p>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeInvitationModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn-primary" onclick="sendInvitation()">
+                        <i class="fas fa-paper-plane"></i> Send Invitation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ base_path }}/static/js/task-modal.js"></script>
+    <script>
+        // Additional inline scripts for invitation modal preview
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.getElementById('invitation-email');
+            const messageInput = document.getElementById('invitation-message');
+            
+            if (emailInput) {
+                emailInput.addEventListener('input', function() {
+                    document.getElementById('preview-to').textContent = this.value || '(enter email)';
+                });
+            }
+            
+            if (messageInput) {
+                messageInput.addEventListener('input', function() {
+                    document.getElementById('preview-message').textContent = this.value || 'No message';
+                });
+            }
+            
+            // Load task lists for the select dropdown
+            loadTaskLists();
+        });
+        
+        async function loadTaskLists() {
+            try {
+                const response = await fetch('{{ base_path }}/api/accounts');
+                const data = await response.json();
+                
+                const select = document.getElementById('task-list');
+                select.innerHTML = '<option value="">Select Task List...</option>';
+                
+                if (data.accounts && data.accounts.length > 0) {
+                    data.accounts.forEach(account => {
+                        if (account.task_lists && account.task_lists.length > 0) {
+                            const optgroup = document.createElement('optgroup');
+                            optgroup.label = account.email || account.id;
+                            
+                            account.task_lists.forEach(list => {
+                                const option = document.createElement('option');
+                                option.value = `${account.id}:${list.id}`;
+                                option.textContent = list.name;
+                                optgroup.appendChild(option);
+                            });
+                            
+                            select.appendChild(optgroup);
+                        }
+                    });
+                    
+                    // Set default account ID
+                    if (data.current_account) {
+                        document.getElementById('task-account-id').value = data.current_account;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load task lists:', error);
+                document.getElementById('task-list').innerHTML = '<option value="">Failed to load task lists</option>';
+            }
+        }
+    </script>
+</body>
+</html>

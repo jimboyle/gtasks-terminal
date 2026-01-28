@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+        window.GTASKS_BASE_PATH = '{{ base_path }}';
+    </script>
+    <title>Tags Management - GTasks Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dashboard.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dark-mode.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/tags.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/task-card.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/multiselect.css">
+    <script type="module" src="{{ base_path }}/static/js/task-card.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/multiselect.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/task-view-manager.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/tags.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 id="sidebar-title">GTasks</h2>
+                <button class="menu-toggle" onclick="toggleSidebar()" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ base_path }}/dashboard" class="nav-item" id="nav-dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ base_path }}/hierarchy" class="nav-item" id="nav-hierarchy">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Hierarchy</span>
+                </a>
+                <a href="{{ base_path }}/tasks" class="nav-item" id="nav-tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="{{ base_path }}/tags" class="nav-item active" id="nav-tags">
+                    <i class="fas fa-tags"></i>
+                    <span>Tags</span>
+                </a>
+                <a href="{{ base_path }}/settings" class="nav-item" id="nav-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <div class="tags-page">
+                <!-- Header -->
+                <div class="header">
+                    <h1><i class="fas fa-tags mr-2"></i>Tags Management</h1>
+                    <div class="header-actions">
+                        <div id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()"
+                            title="Toggle Dark Mode">
+                            <i class="fas fa-sun sun-icon"></i>
+                            <i class="fas fa-moon moon-icon"></i>
+                            <span class="mode-text"><span class="sun-icon">Light</span><span
+                                    class="moon-icon">Dark</span></span>
+                        </div>
+                        <div class="refresh-dropdown">
+                            <button class="header-refresh-btn" onclick="refreshTags()" title="Refresh Tags">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <button class="refresh-dropdown-toggle" onclick="toggleRefreshDropdown()"
+                                title="More options">
+                                <i class="fas fa-caret-down"></i>
+                            </button>
+                            <div class="refresh-dropdown-menu" id="refresh-dropdown-menu">
+                                <a href="#" onclick="refreshTags(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-sync"></i> Refresh Tags
+                                </a>
+                                <a href="#" onclick="syncTagsWithTasks(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-link"></i> Sync with Tasks
+                                </a>
+                            </div>
+                        </div>
+                        <select id="account-selector" class="account-selector" onchange="switchAccount(this.value)">
+                            <option value="">Loading accounts...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="header-subtitle">
+                    <p>Manage your tags and organize your tasks</p>
+                    <button class="btn btn-primary" onclick="openAddTagModal()">
+                        <i class="fas fa-plus"></i> Add New Tag
+                    </button>
+                </div>
+
+                <!-- Search and Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="tag-search" placeholder="Search tags..." oninput="filterTags()">
+                    </div>
+                    <div class="filter-options">
+                        <select id="tag-type-filter" onchange="filterTags()">
+                            <option value="all">All Types</option>
+                            <option value="account">Account Tags (@)</option>
+                            <option value="regular">Regular Tags (#)</option>
+                        </select>
+                        <select id="tag-sort" onchange="sortTags()">
+                            <option value="name">Sort by Name</option>
+                            <option value="usage">Sort by Usage</option>
+                            <option value="recent">Recently Used</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tags Statistics -->
+                <div class="tags-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-tag"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="total-tags">0</span>
+                            <span class="stat-label">Total Tags</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-user-tag"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="account-tags">0</span>
+                            <span class="stat-label">Account Tags</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-hashtag"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="regular-tags">0</span>
+                            <span class="stat-label">Regular Tags</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tags Grid -->
+                <div class="tags-grid" id="tags-grid">
+                    <!-- Tags will be loaded here dynamically -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <i class="fas fa-tags"></i>
+                    <h3>No tags found</h3>
+                    <p>Create your first tag to start organizing your tasks</p>
+                    <button class="btn-primary" onclick="openAddTagModal()">
+                        <i class="fas fa-plus"></i> Create Tag
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Tag Modal -->
+    <div class="modal-overlay" id="tag-modal-overlay" style="display: none;">
+        <div class="modal-content tag-modal-content">
+            <div class="modal-header">
+                <h2 id="tag-modal-title"><i class="fas fa-plus-circle"></i> Add New Tag</h2>
+                <button class="modal-close" onclick="closeTagModal()">&times;</button>
+            </div>
+
+            <form id="tag-form" class="tag-form">
+                <input type="hidden" id="tag-id" name="tag_id">
+
+                <!-- Tag Name -->
+                <div class="form-group">
+                    <label for="tag-name">
+                        <i class="fas fa-tag"></i> Tag Name <span class="required">*</span>
+                    </label>
+                    <input type="text" id="tag-name" name="name" required placeholder="Enter tag name..."
+                        maxlength="50">
+                    <span class="help-text">Will be saved as #tagname or @tagname</span>
+                </div>
+
+                <!-- Tag Type -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-list"></i> Tag Type
+                    </label>
+                    <div class="tag-type-selector">
+                        <label class="type-option">
+                            <input type="radio" name="tag_type" value="regular" checked>
+                            <span class="type-label">
+                                <i class="fas fa-hashtag"></i> Regular Tag
+                            </span>
+                            <span class="type-description">General purpose tag for categorizing tasks</span>
+                        </label>
+                        <label class="type-option">
+                            <input type="radio" name="tag_type" value="account">
+                            <span class="type-label">
+                                <i class="fas fa-user-tag"></i> Account Tag
+                            </span>
+                            <span class="type-description">Tag representing a user account for task sharing</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Color Selection -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-palette"></i> Tag Color
+                    </label>
+                    <div class="color-picker" id="color-picker">
+                        <button type="button" class="color-option" data-color="blue"
+                            style="background-color: #3b82f6;"></button>
+                        <button type="button" class="color-option" data-color="green"
+                            style="background-color: #10b981;"></button>
+                        <button type="button" class="color-option" data-color="yellow"
+                            style="background-color: #f59e0b;"></button>
+                        <button type="button" class="color-option" data-color="red"
+                            style="background-color: #ef4444;"></button>
+                        <button type="button" class="color-option" data-color="purple"
+                            style="background-color: #8b5cf6;"></button>
+                        <button type="button" class="color-option" data-color="pink"
+                            style="background-color: #ec4899;"></button>
+                        <button type="button" class="color-option" data-color="gray"
+                            style="background-color: #6b7280;"></button>
+                    </div>
+                    <input type="hidden" id="tag-color" name="color" value="blue">
+                </div>
+
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="tag-description">
+                        <i class="fas fa-align-left"></i> Description
+                    </label>
+                    <textarea id="tag-description" name="description" rows="3"
+                        placeholder="Add a description for this tag..."></textarea>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeTagModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-primary" id="tag-submit-btn">
+                        <i class="fas fa-plus"></i> Create Tag
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal-overlay" style="display: none;">
+        <div class="modal-content delete-modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Delete Tag</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+
+            <div class="delete-content">
+                <p class="delete-warning">
+                    Are you sure you want to delete this tag? This action cannot be undone.
+                </p>
+                <div class="tag-preview" id="delete-tag-preview">
+                    <!-- Tag preview will be shown here -->
+                </div>
+                <p class="delete-impact">
+                    This tag is used in <strong id="tag-usage-count">0</strong> tasks.
+                </p>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeDeleteModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn-danger" id="confirm-delete-btn">
+                        <i class="fas fa-trash"></i> Delete Tag
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Tasks Modal -->
+    <div class="modal-overlay" id="tasks-modal-overlay" style="display: none;">
+        <div class="modal-content tasks-modal-content-fullscreen">
+            <div class="modal-header">
+                <h2><i class="fas fa-tasks"></i> Tasks with Tag: <span id="view-tag-name"></span></h2>
+                <button class="modal-close" onclick="closeTasksModal()">&times;</button>
+            </div>
+
+            <!-- Task Filters Bar -->
+            <div class="task-filters-bar" id="task-filters-bar">
+                <div class="filter-bar-toggle">
+                    <button class="btn-toggle" id="toggle-filters-btn" title="Toggle filters">
+                        <i class="fas fa-chevron-up" id="toggle-filters-icon"></i>
+                    </button>
+                </div>
+                
+                <!-- Expanded Filters -->
+                <div class="filter-content" id="filter-content">
+                    <input type="text" id="tag-task-search-filter" class="filter-input" placeholder="Search tasks...">
+                    <select id="tag-task-status-filter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <select id="tag-task-priority-filter" class="filter-select">
+                        <option value="">All Priorities</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+
+                    <!-- Date Filter Section -->
+                    <div class="filter-section date-filter-section">
+                        <div class="filter-row">
+                            <label>Date Field:</label>
+                            <select id="tag-task-date-field" class="filter-select">
+                                <option value="due">Due Date</option>
+                                <option value="created_at">Created Date</option>
+                                <option value="modified_at">Modified Date</option>
+                            </select>
+                        </div>
+                        <div class="filter-row date-range-filter">
+                            <input type="date" id="tag-task-date-start" class="filter-input" placeholder="From date...">
+                            <span style="color: #6b7280; margin: 0 0.5rem;">to</span>
+                            <input type="date" id="tag-task-date-end" class="filter-input" placeholder="To date...">
+                        </div>
+                    </div>
+
+                    <!-- Sort Section -->
+                    <div class="filter-section sort-filter-section">
+                        <div class="filter-row">
+                            <label>Sort By:</label>
+                            <select id="tag-task-sort-field" class="filter-select">
+                                <option value="due">Due Date</option>
+                                <option value="created_at">Created Date</option>
+                                <option value="modified_at">Modified Date</option>
+                                <option value="priority">Priority</option>
+                                <option value="title">Title</option>
+                            </select>
+                            <select id="tag-task-sort-order" class="filter-select">
+                                <option value="desc" selected>Descending</option>
+                                <option value="asc">Ascending</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Clear Button -->
+                    <div class="filter-section clear-filter-section">
+                        <button id="tag-task-clear-filters" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Clear All Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sticky Search Bar (shown when scrolling) -->
+            <div class="sticky-search-bar" id="sticky-search-bar">
+                <div class="sticky-search-container">
+                    <input type="text" id="sticky-task-search-filter" class="sticky-search-input" placeholder="Search tasks...">
+                    <button class="sticky-toggle-btn" id="sticky-toggle-filters" title="Show all filters">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task View Manager Container -->
+            <div class="tasks-modal-body">
+                <div id="tag-tasks-list">
+                    <!-- Tasks will be loaded here by TaskViewManager -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load task view manager first -->
+    <script>
+        // Sidebar toggle functionality
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('sidebar-collapsed');
+        }
+
+        // Dark mode toggle functionality
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode ? '"enabled"' : '"disabled"');
+
+            // Update button text based on current mode
+            const toggleBtn = document.getElementById('darkModeToggle');
+            const modeText = toggleBtn ? toggleBtn.querySelector('.mode-text') : null;
+            if (modeText) {
+                modeText.innerHTML = isDarkMode ?
+                    '<span class="moon-icon">Dark</span>' :
+                    '<span class="sun-icon">Light</span>';
+            }
+        }
+
+        // Initialize dark mode from localStorage
+        document.addEventListener('DOMContentLoaded', function () {
+            let savedDarkMode = localStorage.getItem('darkMode');
+            // Handle both legacy boolean strings and JSON-quoted "enabled"/"disabled"
+            let isEnabled = false;
+            if (savedDarkMode) {
+                // Strip quotes if present (JSON format)
+                const cleanValue = savedDarkMode.replace(/"/g, '');
+                isEnabled = cleanValue === 'true' || cleanValue === 'enabled';
+            }
+
+            if (isEnabled) {
+                document.body.classList.add('dark-mode');
+                // Update button text to show "Dark"
+                const toggleBtn = document.getElementById('darkModeToggle');
+                const modeText = toggleBtn ? toggleBtn.querySelector('.mode-text') : null;
+                if (modeText) {
+                    modeText.innerHTML = '<span class="moon-icon">Dark</span>';
+                }
+            } else {
+                // Update button text to show "Light"
+                const toggleBtn = document.getElementById('darkModeToggle');
+                const modeText = toggleBtn ? toggleBtn.querySelector('.mode-text') : null;
+                if (modeText) {
+                    modeText.innerHTML = '<span class="sun-icon">Light</span>';
+                }
+            }
+
+            // Set up task filters bar toggle
+            setupTaskFiltersToggle();
+            
+            // Set up sticky search bar
+            setupStickySearchBar();
+        });
+
+        // Task Filters Bar Toggle
+        function setupTaskFiltersToggle() {
+            const toggleBtn = document.getElementById('toggle-filters-btn');
+            const filtersBar = document.getElementById('task-filters-bar');
+            const toggleIcon = document.getElementById('toggle-filters-icon');
+            
+            if (toggleBtn && filtersBar) {
+                toggleBtn.addEventListener('click', function() {
+                    filtersBar.classList.toggle('collapsed');
+                    if (filtersBar.classList.contains('collapsed')) {
+                        toggleIcon.classList.remove('fa-chevron-up');
+                        toggleIcon.classList.add('fa-chevron-down');
+                    } else {
+                        toggleIcon.classList.remove('fa-chevron-down');
+                        toggleIcon.classList.add('fa-chevron-up');
+                    }
+                });
+            }
+        }
+
+        // Sticky Search Bar
+        function setupStickySearchBar() {
+            const stickyBar = document.getElementById('sticky-search-bar');
+            const stickyInput = document.getElementById('sticky-task-search-filter');
+            const mainSearchInput = document.getElementById('tag-task-search-filter');
+            const tasksBody = document.querySelector('.tasks-modal-body');
+            const stickyToggle = document.getElementById('sticky-toggle-filters');
+            
+            if (!stickyBar || !stickyInput || !mainSearchInput) return;
+
+            // Sync sticky search with main search
+            stickyInput.addEventListener('input', function() {
+                mainSearchInput.value = this.value;
+                // Trigger input event on main search to notify TaskViewManager
+                mainSearchInput.dispatchEvent(new Event('input'));
+            });
+
+            // Sync main search with sticky search
+            mainSearchInput.addEventListener('input', function() {
+                stickyInput.value = this.value;
+            });
+
+            // Toggle full filters from sticky bar
+            if (stickyToggle) {
+                stickyToggle.addEventListener('click', function() {
+                    const filtersBar = document.getElementById('task-filters-bar');
+                    if (filtersBar && filtersBar.classList.contains('collapsed')) {
+                        filtersBar.classList.remove('collapsed');
+                        const toggleIcon = document.getElementById('toggle-filters-icon');
+                        if (toggleIcon) {
+                            toggleIcon.classList.remove('fa-chevron-down');
+                            toggleIcon.classList.add('fa-chevron-up');
+                        }
+                    }
+                    // Focus on the main search input
+                    mainSearchInput.focus();
+                });
+            }
+
+            // Show/hide sticky bar on scroll
+            if (tasksBody) {
+                tasksBody.addEventListener('scroll', function() {
+                    const scrollTop = this.scrollTop;
+                    const filterBarHeight = 80; // Approximate height of filter bar
+                    
+                    if (scrollTop > filterBarHeight) {
+                        stickyBar.classList.add('visible');
+                        tasksBody.classList.add('has-sticky-bar');
+                    } else {
+                        stickyBar.classList.remove('visible');
+                        tasksBody.classList.remove('has-sticky-bar');
+                    }
+                });
+            }
+        }
+    </script>
+
+    <!-- Full-screen modal styles -->
+    <style>
+        .tasks-modal-content-fullscreen {
+            max-width: 100% !important;
+            width: 100% !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        .tasks-modal-content-fullscreen .modal-header {
+            flex-shrink: 0;
+            padding: 0.75rem 1rem;
+        }
+
+        .tasks-modal-content-fullscreen .modal-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        .tasks-modal-content-fullscreen .tasks-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        /* Compact Filter Bar */
+        .task-filters-bar {
+            display: flex;
+            flex-direction: column;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+        }
+
+        .task-filters-bar.collapsed {
+            padding: 0.25rem 1rem;
+        }
+
+        .task-filters-bar.collapsed .filter-content {
+            display: none;
+        }
+
+        .filter-bar-toggle {
+            display: flex;
+            justify-content: center;
+            padding: 0.25rem 0;
+        }
+
+        .btn-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #6b7280;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .btn-toggle:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .filter-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0;
+            align-items: center;
+        }
+
+        .task-filters-bar .filter-input {
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 120px;
+        }
+
+        .task-filters-bar .filter-select {
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+            min-width: auto;
+        }
+
+        .task-filters-bar .filter-section {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .task-filters-bar .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .task-filters-bar .filter-row label {
+            font-size: 12px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+
+        .task-filters-bar .date-filter-section,
+        .task-filters-bar .sort-filter-section {
+            padding-left: 0.5rem;
+            border-left: 1px solid #e5e7eb;
+        }
+
+        .task-filters-bar .clear-filter-section {
+            margin-left: auto;
+        }
+
+        .task-filters-bar .btn-secondary {
+            padding: 0.35rem 0.5rem;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: all 0.2s;
+        }
+
+        .task-filters-bar .btn-secondary:hover {
+            background: #f3f4f6;
+        }
+
+        .task-filters-bar .btn-secondary i {
+            font-size: 11px;
+        }
+
+        /* Sticky Search Bar - Compact */
+        .sticky-search-bar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .sticky-search-bar.visible {
+            display: block;
+        }
+
+        .sticky-search-container {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .sticky-search-input {
+            flex: 1;
+            padding: 0.35rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .sticky-toggle-btn {
+            padding: 0.35rem 0.5rem;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .sticky-toggle-btn:hover {
+            background: #e5e7eb;
+        }
+
+        /* Add padding to modal body when sticky bar is visible */
+        .tasks-modal-body.has-sticky-bar {
+            padding-top: 3rem;
+        }
+    </style>
+</body>
+
+</html>

@@ -13,6 +13,7 @@ from gtasks_cli.commands.done import done
 from gtasks_cli.commands.delete import delete
 from gtasks_cli.commands.update import update
 from gtasks_cli.commands.auth import auth
+from gtasks_cli.commands.user import user
 from gtasks_cli.commands.summary import summary
 from gtasks_cli.commands.interactive import interactive
 from gtasks_cli.commands.deduplicate import deduplicate
@@ -24,6 +25,9 @@ from gtasks_cli.commands.ai import ai
 from gtasks_cli.commands.mcp import mcp
 from gtasks_cli.commands.tasklist import tasklist
 from gtasks_cli.commands.remote import remote_commands
+from gtasks_cli.commands.import_tags import import_tags_command
+from gtasks_cli.commands.connections import connections
+from gtasks_cli.commands.shared import shared
 from gtasks_cli.utils.logger import setup_logger
 
 # Set up logger
@@ -82,6 +86,7 @@ cli.add_command(done)
 # cli.add_command(delete)
 # cli.add_command(update)
 cli.add_command(auth)
+cli.add_command(user)
 cli.add_command(deduplicate)
 cli.add_command(account)
 cli.add_command(generate_report)
@@ -90,6 +95,9 @@ cli.add_command(config)
 # cli.add_command(mcp)
 cli.add_command(tasklist)
 cli.add_command(remote_commands)
+cli.add_command(import_tags_command)
+cli.add_command(connections)
+cli.add_command(shared)
 
 
 def main():

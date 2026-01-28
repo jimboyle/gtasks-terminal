@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+        window.GTASKS_BASE_PATH = '{{ base_path }}';
+        window.SETTINGS_SECTION = '{{ section | default('profile - section') }}';
+    </script>
+    <title>Settings - GTasks Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dashboard.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dark-mode.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/settings.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 id="sidebar-title">GTasks</h2>
+                <button class="menu-toggle" onclick="toggleSidebar()" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ base_path }}/dashboard" class="nav-item" id="nav-dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ base_path }}/hierarchy" class="nav-item" id="nav-hierarchy">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Hierarchy</span>
+                </a>
+                <a href="{{ base_path }}/tasks" class="nav-item" id="nav-tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="{{ base_path }}/tags" class="nav-item" id="nav-tags">
+                    <i class="fas fa-tags"></i>
+                    <span>Tags</span>
+                </a>
+                <a href="{{ base_path }}/settings" class="nav-item active" id="nav-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <div class="settings-page">
+                <div class="header">
+                    <h1><i class="fas fa-cog mr-2"></i>Settings</h1>
+                    <div class="header-actions">
+                        <div id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()"
+                            title="Toggle Dark Mode">
+                            <i class="fas fa-sun sun-icon"></i>
+                            <i class="fas fa-moon moon-icon"></i>
+                            <span class="mode-text"><span class="sun-icon">Light</span><span
+                                    class="moon-icon">Dark</span></span>
+                        </div>
+                        <div class="refresh-dropdown">
+                            <button class="header-refresh-btn" onclick="refreshData()" title="Refresh Data">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <button class="refresh-dropdown-toggle" onclick="toggleRefreshDropdown()"
+                                title="More options">
+                                <i class="fas fa-caret-down"></i>
+                            </button>
+                            <div class="refresh-dropdown-menu" id="refresh-dropdown-menu">
+                                <a href="#" onclick="refreshData(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-database"></i> Refresh Cache
+                                </a>
+                                <a href="#" onclick="syncAndRefresh(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-sync"></i> Sync Data
+                                </a>
+                                <a href="#" onclick="syncRemoteDb(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-cloud-upload-alt"></i> Sync External DB
+                                </a>
+                            </div>
+                        </div>
+                        <select id="account-selector" class="account-selector" onchange="switchAccount(this.value)">
+                            <option value="">Loading accounts...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Settings Sections -->
+                <div class="settings-layout">
+                    <!-- Settings Sidebar -->
+                    <aside class="settings-sidebar">
+                        <nav class="settings-nav">
+                            <a href="#" class="settings-nav-item active" data-section="profile-section"
+                                data-short="Profile">
+                                <i class="fas fa-user"></i>
+                                <span>Profile</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="api-section" data-short="API">
+                                <i class="fas fa-key"></i>
+                                <span>API Configuration</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="accounts-section" data-short="Accounts">
+                                <i class="fas fa-link"></i>
+                                <span>Connected Accounts</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="display-section" data-short="Display">
+                                <i class="fas fa-palette"></i>
+                                <span>Display</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="refresh-section" data-short="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Auto-Refresh</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="task-section" data-short="Tasks">
+                                <i class="fas fa-tasks"></i>
+                                <span>Task Defaults</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="notifications-section"
+                                data-short="Notifications">
+                                <i class="fas fa-bell"></i>
+                                <span>Notifications</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="data-section" data-short="Data">
+                                <i class="fas fa-database"></i>
+                                <span>Data Management</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="tags-import-section" data-short="Tags">
+                                <i class="fas fa-tags"></i>
+                                <span>Tags Import</span>
+                            </a>
+                            <a href="#" class="settings-nav-item" data-section="about-section" data-short="About">
+                                <i class="fas fa-info-circle"></i>
+                                <span>About</span>
+                            </a>
+                        </nav>
+                    </aside>
+
+                    <!-- Settings Content -->
+                    <div class="settings-content">
+                        <!-- Profile Section -->
+                        <section id="profile-section" class="settings-section active">
+                            <h2><i class="fas fa-user"></i> Profile</h2>
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label for="profile-name">Display Name</label>
+                                    <input type="text" id="profile-name" placeholder="Your name" value="">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-email">Email</label>
+                                    <input type="email" id="profile-email" placeholder="your@email.com" value=""
+                                        readonly>
+                                    <small>Email cannot be changed</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-user-id">User ID</label>
+                                    <input type="text" id="profile-user-id" value="" readonly>
+                                    <small>Your unique user ID for account tags</small>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveProfile()">
+                                    <i class="fas fa-save"></i> Save Profile
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- API Key Section -->
+                        <section class="settings-section" id="api-section">
+                            <h2><i class="fas fa-key"></i> API Configuration</h2>
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label for="qerds-api-key">QERDS API Key</label>
+                                    <div class="api-key-input">
+                                        <input type="password" id="qerds-api-key"
+                                            placeholder="Enter your QERDS API key">
+                                        <button type="button" class="toggle-visibility"
+                                            onclick="toggleApiKeyVisibility()">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small>Required for syncing data and user connections</small>
+                                </div>
+                                <div class="api-status" id="api-status">
+                                    <span class="status-indicator"></span>
+                                    <span class="status-text">API key not configured</span>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveApiKey()">
+                                    <i class="fas fa-save"></i> Save API Key
+                                </button>
+                                <button class="btn btn-secondary" onclick="testApiKey()">
+                                    <i class="fas fa-vial"></i> Test Connection
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Connected Accounts Section -->
+                        <section class="settings-section" id="accounts-section">
+                            <h2><i class="fas fa-link"></i> Connected Accounts</h2>
+                            <div class="connected-accounts-list" id="connected-accounts-list">
+                                <!-- Connected accounts will be loaded here -->
+                            </div>
+                            <div class="account-invitations" id="account-invitations">
+                                <h3><i class="fas fa-envelope"></i> Pending Invitations</h3>
+                                <div class="invitations-list" id="invitations-list">
+                                    <!-- Pending invitations will be loaded here -->
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Display Settings Section -->
+                        <section class="settings-section" id="display-section">
+                            <h2><i class="fas fa-palette"></i> Display</h2>
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label for="default-view">Default View</label>
+                                    <select id="default-view">
+                                        <option value="dashboard">Dashboard</option>
+                                        <option value="hierarchy">Hierarchy</option>
+                                        <option value="tasks">Tasks</option>
+                                    </select>
+                                    <small>Section to show when dashboard loads</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="date-format">Date Format</label>
+                                    <select id="date-format">
+                                        <option value="YYYY-MM-DD">YYYY-MM-DD (2024-01-15)</option>
+                                        <option value="DD/MM/YYYY">DD/MM/YYYY (15/01/2024)</option>
+                                        <option value="MM/DD/YYYY">MM/DD/YYYY (01/15/2024)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="timezone">Timezone</label>
+                                    <select id="timezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">Eastern Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                        <option value="Europe/London">London</option>
+                                        <option value="Asia/Tokyo">Tokyo</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveDisplaySettings()">
+                                    <i class="fas fa-save"></i> Save Display Settings
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Auto-Refresh Section -->
+                        <section class="settings-section" id="refresh-section">
+                            <h2><i class="fas fa-sync-alt"></i> Auto-Refresh</h2>
+                            <div class="settings-form">
+                                <div class="toggle-group">
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <label>Enable Auto-Refresh</label>
+                                            <small>Automatically refresh data at specified intervals</small>
+                                        </div>
+                                        <div class="toggle-switch" id="auto-refresh-toggle"
+                                            onclick="toggleAutoRefresh()"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="refresh-interval">Refresh Interval</label>
+                                    <select id="refresh-interval" disabled>
+                                        <option value="30">30 seconds</option>
+                                        <option value="60" selected>1 minute</option>
+                                        <option value="300">5 minutes</option>
+                                        <option value="600">10 minutes</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveRefreshSettings()">
+                                    <i class="fas fa-save"></i> Save Refresh Settings
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Task Settings Section -->
+                        <section class="settings-section" id="task-section">
+                            <h2><i class="fas fa-tasks"></i> Task Defaults</h2>
+                            <div class="settings-form">
+                                <div class="form-group">
+                                    <label for="default-priority">Default Priority</label>
+                                    <select id="default-priority">
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="default-status">Default Status</label>
+                                    <select id="default-status">
+                                        <option value="pending" selected>Pending</option>
+                                        <option value="in_progress">In Progress</option>
+                                    </select>
+                                </div>
+                                <div class="toggle-group">
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <label>Hide Completed Tasks</label>
+                                            <small>Hide completed tasks in task lists by default</small>
+                                        </div>
+                                        <div class="toggle-switch" id="hide-completed-toggle"
+                                            onclick="toggleHideCompleted()"></div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveTaskSettings()">
+                                    <i class="fas fa-save"></i> Save Task Settings
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Notifications Section -->
+                        <section class="settings-section" id="notifications-section">
+                            <h2><i class="fas fa-bell"></i> Notifications</h2>
+                            <div class="settings-form">
+                                <div class="toggle-group">
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <label>Email Notifications</label>
+                                            <small>Receive email when someone assigns a task to you</small>
+                                        </div>
+                                        <div class="toggle-switch" id="email-notifications-toggle"
+                                            onclick="toggleEmailNotifications()"></div>
+                                    </div>
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <label>Task Reminders</label>
+                                            <small>Get reminders for upcoming due dates</small>
+                                        </div>
+                                        <div class="toggle-switch" id="task-reminders-toggle"
+                                            onclick="toggleTaskReminders()"></div>
+                                    </div>
+                                    <div class="toggle-item">
+                                        <div class="toggle-info">
+                                            <label>Connection Requests</label>
+                                            <small>Get notified when someone wants to connect</small>
+                                        </div>
+                                        <div class="toggle-switch" id="connection-requests-toggle"
+                                            onclick="toggleConnectionRequests()"></div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveNotificationSettings()">
+                                    <i class="fas fa-save"></i> Save Notification Settings
+                                </button>
+                            </div>
+                        </section>
+
+                        <!-- Data Management Section -->
+                        <section class="settings-section" id="data-section">
+                            <h2><i class="fas fa-database"></i> Data Management</h2>
+                            <div class="settings-form">
+                                <div class="data-actions">
+                                    <button class="btn btn-secondary" onclick="exportData()">
+                                        <i class="fas fa-download"></i> Export All Data
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="importData()">
+                                        <i class="fas fa-upload"></i> Import Data
+                                    </button>
+                                </div>
+                                <div class="danger-zone">
+                                    <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                                    <button class="btn btn-danger" onclick="clearAllData()">
+                                        <i class="fas fa-trash"></i> Clear All Local Data
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Tags Import Section -->
+                        <section class="settings-section" id="tags-import-section">
+                            <h2><i class="fas fa-tags"></i> Tags Import</h2>
+                            <div class="settings-form">
+                                <p class="section-description">Import tags from Google Tasks to the Tags page. Tags are
+                                    extracted from your current account's tasks.</p>
+
+                                <!-- Current Account Info -->
+                                <div class="account-info-banner">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Tags will be imported from: <strong
+                                            id="current-account-display">Loading...</strong></span>
+                                    <a href="/tags" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+                                        <i class="fas fa-external-link-alt"></i> View Tags Page
+                                    </a>
+                                </div>
+
+                                <!-- Action Cards Grid -->
+                                <div class="tag-action-cards">
+                                    <div class="tag-action-card">
+                                        <div class="card-icon dry-run">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <div class="card-content">
+                                            <h3>Dry Run</h3>
+                                            <p>Preview tags that will be imported without making any changes</p>
+                                        </div>
+                                        <button class="btn btn-secondary" onclick="importTagsDryRun()">
+                                            <i class="fas fa-eye"></i> Dry Run First
+                                        </button>
+                                    </div>
+
+                                    <div class="tag-action-card">
+                                        <div class="card-icon import">
+                                            <i class="fas fa-download"></i>
+                                        </div>
+                                        <div class="card-content">
+                                            <h3>Import Tags</h3>
+                                            <p>Import all tags from Google Tasks to the Tags page</p>
+                                        </div>
+                                        <button class="btn btn-primary" onclick="importTagsFromGoogle()">
+                                            <i class="fas fa-download"></i> Import Tags
+                                        </button>
+                                    </div>
+
+                                    <div class="tag-action-card">
+                                        <div class="card-icon stats">
+                                            <i class="fas fa-chart-bar"></i>
+                                        </div>
+                                        <div class="card-content">
+                                            <h3>Tag Statistics</h3>
+                                            <p>View usage statistics and tag distribution</p>
+                                        </div>
+                                        <button class="btn btn-secondary" onclick="viewTagStatistics()">
+                                            <i class="fas fa-chart-bar"></i> View Stats
+                                        </button>
+                                    </div>
+
+                                    <div class="tag-action-card">
+                                        <div class="card-icon sync">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </div>
+                                        <div class="card-content">
+                                            <h3>Sync Tags</h3>
+                                            <p>Synchronize tags with your tasks to update usage counts</p>
+                                        </div>
+                                        <button class="btn btn-secondary" onclick="syncTags()">
+                                            <i class="fas fa-sync"></i> Sync with Tasks
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Dry Run Preview Section -->
+                                <div class="tag-preview-section" id="dry-run-section" style="display: none;">
+                                    <h3><i class="fas fa-list"></i> Dry Run Preview <span id="dry-run-count"
+                                            class="count-badge"></span></h3>
+                                    <div class="dry-run-preview" id="dry-run-preview">
+                                        <!-- Preview content will be inserted here -->
+                                    </div>
+                                </div>
+
+                                <!-- Tag Statistics Section -->
+                                <div class="tag-stats-section" id="tag-stats-section" style="display: none;">
+                                    <h3><i class="fas fa-chart-pie"></i> Tag Statistics</h3>
+                                    <div class="tag-stats-display" id="tag-stats-display">
+                                        <!-- Stats content will be inserted here -->
+                                    </div>
+                                </div>
+
+                                <!-- Progress Section -->
+                                <div class="tag-progress-section" id="tag-progress-section" style="display: none;">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="tag-progress-fill"></div>
+                                    </div>
+                                    <p class="progress-text" id="tag-progress-text">Processing...</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- About Section -->
+                        <section class="settings-section" id="about-section">
+                            <h2><i class="fas fa-info-circle"></i> About</h2>
+                            <div class="settings-form">
+                                <div class="about-info">
+                                    <p><strong>GTasks Automation</strong></p>
+                                    <p>Version: <span id="app-version">1.0.0</span></p>
+                                    <p>A powerful task management tool with Google Tasks integration.</p>
+                                    <p>Features: @Account tags, task sharing, and real-time sync.</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+        </main>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="import-modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-upload"></i> Import Data</h2>
+                <button class="modal-close" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="import-dropzone" id="import-dropzone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag and drop a file here or click to browse</p>
+                    <input type="file" id="import-file-input" accept=".json" onchange="handleImportFile(event)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary-modal" onclick="closeImportModal()">Cancel</button>
+                <button class="btn-primary-modal" onclick="confirmImport()">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <script src="{{ base_path }}/static/js/settings.js"></script>
+    <script>
+        // Dark mode toggle function
+        function toggleDarkMode() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+
+            // Update the button text
+            const isDarkMode = body.classList.contains('dark-mode');
+            const toggleButton = document.getElementById('darkModeToggle');
+            if (toggleButton) {
+                const modeText = toggleButton.querySelector('.mode-text');
+                if (modeText) {
+                    modeText.innerHTML = `<span class="sun-icon">${isDarkMode ? 'Light' : 'Light'}</span><span class="moon-icon">${isDarkMode ? 'Dark' : 'Dark'}</span>`;
+                }
+            }
+
+            // Save preference using state.js compatible format
+            localStorage.setItem('darkMode', isDarkMode ? '"enabled"' : '"disabled"');
+        }
+
+        // Toggle refresh dropdown menu
+        function toggleRefreshDropdown() {
+            const dropdown = document.getElementById('refresh-dropdown-menu');
+            if (dropdown) {
+                dropdown.classList.toggle('active');
+            }
+        }
+
+        // Initialize dark mode toggle text on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check localStorage for dark mode preference
+            let savedDarkMode = localStorage.getItem('darkMode');
+            let isEnabled = false;
+
+            if (savedDarkMode) {
+                const cleanValue = savedDarkMode.replace(/"/g, '');
+                isEnabled = cleanValue === 'true' || cleanValue === 'enabled';
+            } else {
+                // Fallback to old key
+                isEnabled = localStorage.getItem('gtasks_dark_mode') === 'true';
+            }
+
+            if (isEnabled) {
+                document.body.classList.add('dark-mode');
+            }
+
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const toggleButton = document.getElementById('darkModeToggle');
+            if (toggleButton) {
+                const modeText = toggleButton.querySelector('.mode-text');
+                if (modeText) {
+                    modeText.innerHTML = `<span class="sun-icon">${isDarkMode ? 'Light' : 'Light'}</span><span class="moon-icon">${isDarkMode ? 'Dark' : 'Dark'}</span>`;
+                }
+            }
+
+            // Click outside to close refresh dropdown
+            document.addEventListener('click', function (event) {
+                const dropdown = document.getElementById('refresh-dropdown-menu');
+                const toggleBtn = document.querySelector('.refresh-dropdown-toggle');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    if (!dropdown.contains(event.target) && !toggleBtn.contains(event.target)) {
+                        dropdown.classList.remove('active');
+                    }
+                }
+            });
+
+            // Initialize settings navigation
+            initSettingsNavigation();
+        });
+
+        /**
+         * Initialize settings navigation
+         */
+        function initSettingsNavigation() {
+            const navItems = document.querySelectorAll('.settings-nav-item');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    showSettingsSection(sectionId);
+                });
+            });
+
+            // Use the section parameter from Flask, or default to first section
+            const sectionParam = window.SETTINGS_SECTION || 'profile-section';
+            console.log('[Settings] Initializing with section:', sectionParam);
+            showSettingsSection(sectionParam);
+        }
+
+        /**
+         * Show a specific settings section
+         * @param {string} sectionId - The ID of the section to show
+         */
+        function showSettingsSection(sectionId) {
+            // Remove active class from all nav items
+            const navItems = document.querySelectorAll('.settings-nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-section') === sectionId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Hide all sections
+            const sections = document.querySelectorAll('.settings-section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show the selected section
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) {
+                selectedSection.classList.add('active');
+            }
+        }
+    </script>
+</body>
+
+</html>

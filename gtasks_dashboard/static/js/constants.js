@@ -106,10 +106,43 @@ export const apiEndpoints = {
     hierarchyFiltered: `${getBasePath()}/api/hierarchy/filtered`,
     accountsSwitch: (accountId) => `${getBasePath()}/api/accounts/${accountId}/switch`,
     refresh: `${getBasePath()}/api/refresh`,
+    // Tags endpoints
+    tags: `${getBasePath()}/api/tags`,
+    tagsStatistics: `${getBasePath()}/api/tags/statistics`,
+    // Connections endpoints
+    connections: `${getBasePath()}/api/connections`,
     sync: {
         advanced: `${getBasePath()}/api/sync/advanced`,
         progress: `${getBasePath()}/api/sync/progress`,
-        complete: `${getBasePath()}/api/sync/complete`
+        complete: `${getBasePath()}/api/sync/complete`,
+        status: `${getBasePath()}/api/sync/status`,
+        remote: `${getBasePath()}/api/sync/remote`
+    },
+    // Authentication endpoints
+    auth: {
+        status: `${getBasePath()}/api/auth/status`,
+        logout: `${getBasePath()}/logout`,
+        login: `${getBasePath()}/login`
+    },
+    // Invitation endpoints
+    invitations: {
+        pending: `${getBasePath()}/api/invitations/pending`,
+        sent: `${getBasePath()}/api/invitations/sent`,
+        accept: (invitationId) => `${getBasePath()}/api/invitations/${invitationId}/accept`,
+        reject: (invitationId) => `${getBasePath()}/api/invitations/${invitationId}/reject`,
+        create: `${getBasePath()}/api/invitations/create`
+    },
+    // Shared tasks endpoints
+    sharedTasks: {
+        list: `${getBasePath()}/api/shared-tasks`,
+        pending: `${getBasePath()}/api/shared-tasks/pending`,
+        complete: (taskId) => `${getBasePath()}/api/shared-tasks/${taskId}/complete`,
+        stats: `${getBasePath()}/api/shared-tasks/stats`
+    },
+    // Account tags endpoints
+    accountTags: {
+        list: `${getBasePath()}/api/account-tags`,
+        parse: `${getBasePath()}/api/account-tags/parse`
     }
 };
 

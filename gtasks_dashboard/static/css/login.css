@@ -1,0 +1,760 @@
+/* Login Page Styles */
+.login-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.login-card {
+    background: var(--card-background, #ffffff);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-logo {
+    width: 64px;
+    height: 64px;
+    background: var(--primary-color, #3b82f6);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.login-logo i {
+    font-size: 32px;
+    color: white;
+}
+
+.login-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin: 0 0 8px;
+}
+
+.login-header p {
+    color: var(--text-secondary, #6b7280);
+    margin: 0;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    margin-bottom: 8px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    background: var(--card-background, #ffffff);
+    color: var(--text-primary, #111827);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #9ca3af;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 16px;
+}
+
+.login-btn:hover {
+    background: var(--primary-hover, #2563eb);
+}
+
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 24px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color, #e5e7eb);
+}
+
+.divider span {
+    padding: 0 16px;
+    color: var(--text-secondary, #6b7280);
+    font-size: 14px;
+}
+
+.dummy-login-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: var(--success-color, #10b981);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.dummy-login-btn:hover {
+    background: #059669;
+}
+
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+.alert-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.user-info {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.user-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.user-info-item:last-child {
+    border-bottom: none;
+}
+
+.user-info-label {
+    color: var(--text-secondary, #6b7280);
+    font-size: 14px;
+}
+
+.user-info-value {
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-primary, #111827);
+}
+
+.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+    color: var(--text-secondary, #6b7280);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link:hover {
+    color: var(--primary-color, #3b82f6);
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+    background: #dc2626;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .login-card {
+        background: #1f2937;
+    }
+    
+    .login-header h1 {
+        color: #f9fafb;
+    }
+    
+    .login-header p {
+        color: #9ca3af;
+    }
+    
+    .form-group label {
+        color: #f9fafb;
+    }
+    
+    .form-group input {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .form-group input:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    
+    .user-info {
+        background: #374151;
+    }
+    
+    .user-info-item {
+        border-color: #4b5563;
+    }
+    
+    .user-info-label {
+        color: #9ca3af;
+    }
+    
+    .user-info-value {
+        color: #f9fafb;
+    }
+    
+    .back-link {
+        color: #9ca3af;
+    }
+    
+    .back-link:hover {
+        color: #60a5fa;
+    }
+}
+
+/* Auth Section in Header */
+.auth-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--card-background, #ffffff);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.auth-section.dark-mode {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.auth-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.auth-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-email {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+}
+
+.auth-user-id {
+    font-size: 11px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.auth-user-id.dark-mode {
+    color: #9ca3af;
+}
+
+.auth-logout-btn {
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--text-secondary, #6b7280);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.auth-logout-btn:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.auth-logout-btn.dark-mode:hover {
+    background: rgba(220, 38, 38, 0.2);
+}
+
+/* Invitation Badge */
+.invitation-badge {
+    position: relative;
+}
+
+.invitation-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 18px;
+    height: 18px;
+    background: #ef4444;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+.invitation-btn {
+    padding: 8px 12px;
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.invitation-btn:hover {
+    background: var(--primary-hover, #2563eb);
+}
+
+/* Invitation Modal */
+.invitation-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.invitation-modal {
+    background: var(--card-background, #ffffff);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.invitation-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.invitation-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+}
+
+.invitation-close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #6b7280);
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.invitation-close-btn:hover {
+    background: #f3f4f6;
+    color: var(--text-primary, #111827);
+}
+
+.invitation-modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.invitation-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.invitation-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.invitation-item:last-child {
+    margin-bottom: 0;
+}
+
+.invitation-sender {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.invitation-sender-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.invitation-sender-info h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+}
+
+.invitation-sender-info p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.invitation-message {
+    font-size: 14px;
+    color: var(--text-primary, #111827);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.invitation-task-info {
+    background: #fff;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.invitation-task-info p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.invitation-task-info strong {
+    color: var(--text-primary, #111827);
+}
+
+.invitation-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.invitation-btn-accept {
+    flex: 1;
+    padding: 10px 20px;
+    background: var(--success-color, #10b981);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.invitation-btn-accept:hover {
+    background: #059669;
+}
+
+.invitation-btn-reject {
+    flex: 1;
+    padding: 10px 20px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.invitation-btn-reject:hover {
+    background: #dc2626;
+}
+
+.invitation-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.invitation-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.invitation-empty h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+}
+
+.invitation-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Shared Tasks Section */
+.shared-tasks-section {
+    padding: 20px;
+}
+
+.shared-tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.shared-tasks-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+}
+
+.shared-task-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.shared-task-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color, #e5e7eb);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.shared-task-checkbox:hover {
+    border-color: var(--primary-color, #3b82f6);
+}
+
+.shared-task-checkbox.checked {
+    background: var(--success-color, #10b981);
+    border-color: var(--success-color, #10b981);
+}
+
+.shared-task-content {
+    flex: 1;
+}
+
+.shared-task-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    margin-bottom: 4px;
+}
+
+.shared-task-title.completed {
+    text-decoration: line-through;
+    color: var(--text-secondary, #6b7280);
+}
+
+.shared-task-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.shared-task-assignee {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.shared-task-assignee-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Dark mode for invitation modal */
+.dark-mode .invitation-modal {
+    background: #1f2937;
+}
+
+.dark-mode .invitation-modal-header {
+    border-color: #4b5563;
+}
+
+.dark-mode .invitation-modal-header h2 {
+    color: #f9fafb;
+}
+
+.dark-mode .invitation-close-btn {
+    color: #9ca3af;
+}
+
+.dark-mode .invitation-close-btn:hover {
+    background: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .invitation-item {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.dark-mode .invitation-sender-info h4 {
+    color: #f9fafb;
+}
+
+.dark-mode .invitation-message {
+    color: #f9fafb;
+}
+
+.dark-mode .invitation-task-info {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+
+.dark-mode .invitation-task-info p {
+    color: #9ca3af;
+}
+
+.dark-mode .invitation-task-info strong {
+    color: #f9fafb;
+}

@@ -18,6 +18,7 @@ import sqlite3
 import json
 import re
 import os
+from datetime import datetime
 import threading
 import time
 from pathlib import Path
@@ -48,7 +49,30 @@ class DataManager:
     """Manages data loading and task/account operations"""
     
     def __init__(self, gtasks_path: Optional[Path] = None):
+        """Enhanced initialization with settings and state management"""
         self.gtasks_path = gtasks_path or self._detect_gtasks_path()
+        
+        # Enhanced dashboard state
+        self.dashboard_state = {
+            'tasks': {},
+            'accounts': [],
+            'stats': {},
+            'hierarchy_data': {'nodes': [], 'links': []},
+            'current_account': 'default',
+            'account_types': [],
+            'available_tags': {},
+            'priority_stats': {},
+            'settings': self._get_default_settings(),
+            'realtime': {'connected': False, 'last_update': None}
+        }
+        
+        # Load settings if persistence enabled
+        if FEATURE_FLAGS.get('ENABLE_SETTINGS_PERSISTENCE', False):
+            self._load_settings()
+        
+        # Initialize enhanced features
+        if FEATURE_FLAGS.get('ENABLE_ACCOUNT_TYPE_FILTERS', False):
+            self._generate_account_types()
     
     def _detect_gtasks_path(self) -> Optional[Path]:
         """Detect GTasks CLI path with multiple fallback locations"""
@@ -90,6 +114,91 @@ class DataManager:
             'user': [tag.lower() for tag in user_tags]
         }
     
+    def _parse_tags_field(self, tags_value: str) -> List[str]:
+        """Parse tags field from database (supports both JSON and comma-separated string)"""
+        if not tags_value:
+            return []
+        
+        # Try JSON first (new format)
+        try:
+            return json.loads(tags_value)
+        except (json.JSONDecodeError, TypeError):
+            pass
+        
+        # Fall back to comma-separated string (old format)
+        if isinstance(tags_value, str):
+            return [tag.strip() for tag in tags_value.split(',') if tag.strip()]
+        
+        return []
+    
+    def sync_tags_with_tasks(self):
+        """Sync available_tags with current tasks"""
+        print('[DataManager] Syncing tags with tasks...')
+        
+        # Get all tasks
+        all_tasks = []
+        for account_tasks in self.dashboard_state['tasks'].values():
+            all_tasks.extend(account_tasks)
+            
+        # Reset task counts
+        for tag_data in self.dashboard_state['available_tags'].values():
+            tag_data['task_count'] = 0
+            
+        # Extract and count
+        for task in all_tasks:
+            tags = set()
+            
+            # Helper to add tags
+            def add_tags(bracket, hash_tags, users):
+                tags.update(bracket or [])
+                tags.update(hash_tags or [])
+                tags.update([f"@{u}" for u in (users or [])])
+
+            # Handle Task object
+            if hasattr(task, 'hybrid_tags'):
+                ht = task.hybrid_tags
+                if ht:
+                    # Check if ht is object or dict
+                    if hasattr(ht, 'bracket'):
+                         add_tags(ht.bracket, ht.hash, ht.user)
+                    elif isinstance(ht, dict):
+                         add_tags(ht.get('bracket'), ht.get('hash'), ht.get('user'))
+                
+                # Fallback to description if no tags found
+                if not tags:
+                    desc = getattr(task, 'description', '') or ''
+                    bracket_matches = re.findall(r'\[([^\]]+)\]', desc)
+                    tags.update(bracket_matches)
+                    account_matches = re.findall(r'@(\w+)', desc)
+                    tags.update([f"@{t}" for t in account_matches])
+            
+            # Handle Dict
+            elif isinstance(task, dict):
+                ht = task.get('hybrid_tags', {})
+                if isinstance(ht, dict):
+                    add_tags(ht.get('bracket'), ht.get('hash'), ht.get('user'))
+                
+                if not tags:
+                    desc = task.get('description', '') or ''
+                    bracket_matches = re.findall(r'\[([^\]]+)\]', desc)
+                    tags.update(bracket_matches)
+                    account_matches = re.findall(r'@(\w+)', desc)
+                    tags.update([f"@{t}" for t in account_matches])
+
+            # Update available_tags
+            for tag in tags:
+                if tag not in self.dashboard_state['available_tags']:
+                    print(f"[DataManager] Discovered new tag: {tag}")
+                    self.dashboard_state['available_tags'][tag] = {
+                        'name': tag,
+                        'type': 'account' if tag.startswith('@') else 'regular',
+                        'created_at': datetime.now().isoformat(),
+                        'task_count': 0
+                    }
+                self.dashboard_state['available_tags'][tag]['task_count'] += 1
+                
+        print(f"[DataManager] Synced complete. Total tags: {len(self.dashboard_state['available_tags'])}")
+
     def _calculate_priority(self, title: str) -> str:
         """Calculate priority from asterisks in title"""
         asterisk_count = len(re.findall(r'\*+', title))
@@ -108,43 +217,6 @@ class DataManager:
             if tag_lower in [t.lower() for t in tag_list]:
                 return category
         return 'Tags' if tag.startswith('#') else 'Team' if tag.startswith('@') else 'Legacy'
-    
-    def detect_accounts(self) -> List[Account]:
-        """Detect all configured accounts"""
-        accounts = []
-        
-        if self.gtasks_path and self.gtasks_path.exists():
-            if self.gtasks_path.is_dir():
-                for item in self.gtasks_path.iterdir():
-                    if item.is_dir() and item.name != 'default':
-                        accounts.append(Account(
-                            id=item.name,
-                            name=item.name.replace('_', ' ').title(),
-                            email=f'{item.name}@example.com',
-                            account_type='Other',
-                            is_active=True
-                        ))
-            
-            # Add default account
-            accounts.append(Account(
-                id='default',
-                name='Default',
-                email='default@example.com',
-                account_type='General',
-                is_active=True
-            ))
-        
-        # If no accounts found, create demo account
-        if not accounts:
-            accounts.append(Account(
-                id='demo',
-                name='Demo Account',
-                email='demo@example.com',
-                account_type='Testing',
-                is_active=True
-            ))
-        
-        return accounts
     
     def load_tasks_for_account(self, account_id: str) -> List[Task]:
         """Load tasks for a specific account"""
@@ -246,7 +318,7 @@ class DataManager:
                 'due': row[3],
                 'priority': row[4] or 'medium',
                 'status': row[5] or 'pending',
-                'tags': json.loads(row[6]) if row[6] else [],
+                'tags': self._parse_tags_field(row[6]),
                 'notes': row[7] or '',
                 'account': account_id,
                 'list_title': row[columns.index('list_title')] if 'list_title' in columns and len(row) > columns.index('list_title') else '',
@@ -605,32 +677,6 @@ class DataManager:
     # ============================================
     # ENHANCED FEATURES (Controlled by Feature Flags)
     # ============================================
-    
-    def __init__(self, gtasks_path: Optional[Path] = None):
-        """Enhanced initialization with settings and state management"""
-        self.gtasks_path = gtasks_path or self._detect_gtasks_path()
-        
-        # Enhanced dashboard state
-        self.dashboard_state = {
-            'tasks': {},
-            'accounts': [],
-            'stats': {},
-            'hierarchy_data': {'nodes': [], 'links': []},
-            'current_account': 'default',
-            'account_types': [],
-            'available_tags': {},
-            'priority_stats': {},
-            'settings': self._get_default_settings(),
-            'realtime': {'connected': False, 'last_update': None}
-        }
-        
-        # Load settings if persistence enabled
-        if FEATURE_FLAGS.get('ENABLE_SETTINGS_PERSISTENCE', False):
-            self._load_settings()
-        
-        # Initialize enhanced features
-        if FEATURE_FLAGS.get('ENABLE_ACCOUNT_TYPE_FILTERS', False):
-            self._generate_account_types()
     
     def _get_default_settings(self) -> Dict[str, Any]:
         """Get default dashboard settings"""

@@ -15,7 +15,7 @@ Google Tasks automation tool with CLI and Web Dashboard interfaces for managing 
 | Component | Location | Responsibility |
 |-----------|----------|----------------|
 | **Entry Point** | `gtasks_cli/src/gtasks_cli/main.py` | CLI group, command routing, global options |
-| **Commands** | `gtasks_cli/src/gtasks_cli/commands/` | Individual command modules (add, list, search, view, done, delete, update, auth, summary, interactive, deduplicate, account, advanced_sync, generate_report, config, ai, mcp, tasklist) |
+| **Commands** | `gtasks_cli/src/gtasks_cli/commands/` | Individual command modules (add, list, search, view, done, delete, update, auth, user, summary, interactive, deduplicate, account, advanced_sync, generate_report, config, ai, mcp, tasklist, import-tags) |
 | **Models** | `gtasks_cli/src/gtasks_cli/models/` | Data structures (Task, TaskList, Account) |
 | **Reports** | `gtasks_cli/src/gtasks_cli/reports/` | Report generators (base_report, task_completion_report, pending_tasks_report, organized_tasks_report, etc.) |
 | **Utils** | `gtasks_cli/src/gtasks_cli/utils/` | Helper utilities (email_sender, exceptions, logger) |
@@ -140,6 +140,166 @@ Response/View Rendering
 | **Memory Store** | `context-llemur` | Stores logic/rules in `context/` as plain text |
 | **Tooling** | **MCP** | Exposes `ctx_read/write` to Kilo, Continue, and OpenCode |
 | **Version Sync** | **Git** | Synchronizes AI "memory" across local and remote clones |
+
+---
+
+## 👥 User Accounts & Connections System
+
+### Overview
+This system enables task sharing between users through account tags and invitations.
+
+### Key Components
+
+| Component | Location | Responsibility |
+|-----------|----------|----------------|
+| **User ID Generator** | `gtasks_cli/src/gtasks_cli/utils/user_id_generator.py` | Generates unique user IDs from emails (abc@gmail.com → abc12345) |
+| **Auth Service** | `gtasks_cli/src/gtasks_cli/services/auth_service.py` | User authentication with QERDS API key |
+| **Account Tag Service** | `gtasks_cli/src/gtasks_cli/services/account_tag_service.py` | Detects and manages [@account] tags in tasks |
+| **Invitation Service** | `gtasks_cli/src/gtasks_cli/services/invitation_service.py` | Manages invitation lifecycle |
+| **Invitation Workflow Manager** | `gtasks_cli/src/gtasks_cli/services/invitation_workflow_manager.py` | Orchestrates invitation creation, email sending, acceptance |
+| **Task Sharing Service** | `gtasks_cli/src/gtasks_cli/services/task_sharing_service.py` | Tracks shared tasks and completion status |
+| **Shared Task Access Service** | `gtasks_cli/src/gtasks_cli/services/shared_task_access_service.py` | Manages task visibility and per-user completion tracking |
+| **QERDS API** | `gtasks_cli/src/gtasks_cli/services/qerds_api.py` | External API for email and data storage |
+| **User Model** | `gtasks_cli/src/gtasks_cli/models/user.py` | User data structure |
+
+### CLI Commands
+
+| Command | File | Description |
+|---------|------|-------------|
+| `gtasks connections list` | `commands/connections.py` | List all connections |
+| `gtasks connections pending` | `commands/connections.py` | List pending invitations |
+| `gtasks connections accept <id>` | `commands/connections.py` | Accept an invitation |
+| `gtasks connections reject <id>` | `commands/connections.py` | Reject an invitation |
+| `gtasks connections sent` | `commands/connections.py` | List sent invitations |
+| `gtasks shared list` | `commands/shared.py` | List tasks shared with you |
+| `gtasks shared by-me` | `commands/shared.py` | List tasks you've shared |
+| `gtasks shared complete <id>` | `commands/shared.py` | Mark shared task as complete |
+| `gtasks shared stats` | `commands/shared.py` | Show shared tasks statistics |
+
+### API Endpoints
+
+| Endpoint | Methods | Description |
+|----------|---------|-------------|
+| `/api/shared/tasks` | GET | Get shared tasks for current user |
+| `/api/shared/tasks/<id>/complete` | POST | Mark shared task as complete |
+| `/api/shared/stats` | GET | Get shared tasks statistics |
+| `/api/invitations/create` | POST | Create and send invitation |
+| `/api/invitations/accept/<id>` | POST | Accept invitation via workflow |
+| `/api/invitations/sent` | GET | Get sent invitations |
+| `/api/invitations/pending` | GET | Get pending invitations |
+| `/api/account-tags/detect` | POST | Detect account tags in text |
+| `/api/account-tags/validate` | POST | Validate account tag against email |
+| `/api/user/id` | GET | Get current user ID info |
+
+### Database Schema
+
+**Users Table** (`users.db`):
+- `id`: User ID (e.g., abc12345)
+- `email`: User email
+- `api_key`: QERDS API key
+- `created_at`: Account creation timestamp
+- `last_login`: Last login timestamp
+
+**Connections Table** (`connections.db`):
+- `id`: Connection ID
+- `user_id1`: First user ID
+- `user_id2`: Second user ID
+- `status`: Connection status (active, inactive)
+- `created_at`: Connection creation timestamp
+
+**Invitations Table** (`invitations.db`):
+- `id`: Invitation ID
+- `from_user_id`: Sender's user ID
+- `from_user_email`: Sender's email
+- `to_email`: Recipient's email
+- `to_account_name`: Recipient's account name
+- `task_id`: Optional shared task ID
+- `task_title`: Optional task title
+- `message`: Optional message
+- `status`: Invitation status (pending, accepted, rejected, cancelled)
+- `created_at`: Invitation creation timestamp
+- `expires_at`: Expiration timestamp
+- `responded_at`: Response timestamp
+
+**Task Completions Table** (`task_completions.db`):
+- `user_id`: User who completed the task
+- `task_id`: Task ID
+- `original_account_id`: Account where task was created
+- `completion_status`: Status (pending, in_progress, completed)
+- `completed_at`: Completion timestamp
+- `shared_at`: Sharing timestamp
+
+### User ID Generation
+
+**Format**: `{account_name}{hash}`
+
+**Examples**:
+- `abc@gmail.com` → `abc12345`
+- `john.doe@company.com` → `johndoe67890`
+
+**Hash Generation**:
+```python
+def generate_user_id(email: str) -> str:
+    account_name = email.split('@')[0].lower()
+    hash_suffix = hashlib.md5(email.encode()).hexdigest()[:5]
+    return f"{account_name}{hash_suffix}"
+```
+
+### Account Tags
+
+**Format**: `[@account_name]` or `@account_name`
+
+**Detection**:
+- Regular expressions extract tags from task descriptions
+- Tags are stored with @ prefix in task data
+- Account name is matched against user IDs
+
+**Workflow**:
+1. User creates task with `[@other_account]` tag
+2. System detects the tag and creates invitation
+3. Invitation email sent to the other user
+4. User accepts invitation via login
+5. Connection established between users
+6. Both users can see shared tasks
+7. Each user marks completion independently
+
+### Invitation Flow
+
+```
+1. Task Creation with [@account] tag
+         ↓
+2. Detect new account tag
+         ↓
+3. Create invitation record
+         ↓
+4. Send email via QERDS API
+         ↓
+5. User receives email and logs in
+         ↓
+6. User views pending invitations
+         ↓
+7. User accepts invitation
+         ↓
+8. Create bidirectional connection
+         ↓
+9. Both users can access shared tasks
+```
+
+### Task Sharing & Completion
+
+**Shared Task Access**:
+- Tasks shared with a user appear in their "Shared with Me" view
+- Tasks shared by a user appear in their "Shared by Me" view
+- Completion is tracked per-user
+- Task owner sees completion status of all shared users
+
+**Completion Tracking**:
+```
+Task: "Review document"
+├─ Shared with: @john, @jane
+├─ John: ✅ completed (2024-01-15)
+└─ Jane: ⏳ pending
+```
 
 ---
 

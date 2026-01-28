@@ -44,33 +44,46 @@ def remove_tags_from_text(text: str) -> str:
     return re.sub(pattern, '', text).strip()
 
 
-def extract_tags_from_task(task: Task) -> List[str]:
+def extract_tags_from_task(task) -> List[str]:
     """
     Extract all tags from a task (both title and description).
+    Supports both Task objects and dicts.
     
     Args:
-        task: Task to extract tags from
+        task: Task to extract tags from (Task object or dict)
         
     Returns:
         List of all extracted tags
     """
     tags = []
     
+    # Support both dict and Task object
+    if isinstance(task, dict):
+        title = task.get('title', '')
+        description = task.get('description', '')
+        notes = task.get('notes', '')
+        task_tags = task.get('tags', [])
+    else:
+        title = task.title
+        description = task.description
+        notes = task.notes
+        task_tags = task.tags
+    
     # Extract tags from title
-    if task.title:
-        tags.extend(extract_tags_from_text(task.title))
+    if title:
+        tags.extend(extract_tags_from_text(title))
     
     # Extract tags from description
-    if task.description:
-        tags.extend(extract_tags_from_text(task.description))
+    if description:
+        tags.extend(extract_tags_from_text(description))
     
     # Extract tags from notes
-    if task.notes:
-        tags.extend(extract_tags_from_text(task.notes))
+    if notes:
+        tags.extend(extract_tags_from_text(notes))
     
     # Add existing task tags
-    if task.tags:
-        tags.extend(task.tags)
+    if task_tags:
+        tags.extend(task_tags)
     
     # Remove duplicates while preserving order
     seen = set()

@@ -55,6 +55,12 @@ def tasks_page():
     return render_dashboard(view='tasks')
 
 
+@dashboard.route(f'{BASE_PATH}/tags')
+def tags_page():
+    """Tags page - shows tags management view"""
+    return render_dashboard(view='tags')
+
+
 @dashboard.route(f'{BASE_PATH}/favicon.ico')
 def favicon():
     """Serve favicon as SVG data URI"""

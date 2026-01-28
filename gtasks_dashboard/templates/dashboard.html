@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,7 +21,11 @@
     <link rel="stylesheet" href="{{ base_path }}/static/css/hierarchy-filter.css">
     <link rel="stylesheet" href="{{ base_path }}/static/css/hierarchy-ledger.css">
     <link rel="stylesheet" href="{{ base_path }}/static/css/multiselect.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/login.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/tags.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/task-card.css">
 </head>
+
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
@@ -44,6 +49,39 @@
                     <i class="fas fa-tasks"></i>
                     <span>Tasks</span>
                 </a>
+                <a href="{{ base_path }}/tags" class="nav-item" id="nav-tags">
+                    <i class="fas fa-tags"></i>
+                    <span>Tags</span>
+                </a>
+                <div class="nav-item dropdown" id="nav-settings-dropdown">
+                    <a href="{{ base_path }}/settings" class="dropdown-toggle" onclick="toggleSettingsDropdown(event)">
+                        <i class="fas fa-cog"></i>
+                        <span class="dropdown-text">Settings</span>
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </a>
+                    <div class="sidebar-submenu" id="settings-submenu">
+                        <a href="#" onclick="openSettings(); hideAllSections(); return false;">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>General Settings</span>
+                        </a>
+                        <a href="#" onclick="showTagsImport(); hideAllSections(); return false;">
+                            <i class="fas fa-file-import"></i>
+                            <span>Tags Import</span>
+                        </a>
+                        <a href="#" onclick="showTagsManagement(); hideAllSections(); return false;">
+                            <i class="fas fa-tags"></i>
+                            <span>Tags Management</span>
+                        </a>
+                        <a href="#" onclick="showConnectedAccounts(); hideAllSections(); return false;">
+                            <i class="fas fa-users"></i>
+                            <span>Connected Accounts</span>
+                        </a>
+                        <a href="#" onclick="showRemoteSync(); hideAllSections(); return false;">
+                            <i class="fas fa-cloud-sync"></i>
+                            <span>Remote Sync</span>
+                        </a>
+                    </div>
+                </div>
             </nav>
         </aside>
 
@@ -54,17 +92,20 @@
                 <div class="header">
                     <h1><i class="fas fa-tasks mr-2"></i>GTasks Dashboard</h1>
                     <div class="header-actions">
-                        <div id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                        <div id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()"
+                            title="Toggle Dark Mode">
                             <i class="fas fa-sun sun-icon"></i>
                             <i class="fas fa-moon moon-icon"></i>
-                            <span class="mode-text"><span class="sun-icon">Light</span><span class="moon-icon">Dark</span></span>
+                            <span class="mode-text"><span class="sun-icon">Light</span><span
+                                    class="moon-icon">Dark</span></span>
                         </div>
                         <div class="refresh-dropdown">
                             <button class="header-refresh-btn" onclick="refreshData()" title="Refresh Data">
                                 <i class="fas fa-sync-alt"></i>
                                 <span>Refresh</span>
                             </button>
-                            <button class="refresh-dropdown-toggle" onclick="toggleRefreshDropdown()" title="More options">
+                            <button class="refresh-dropdown-toggle" onclick="toggleRefreshDropdown()"
+                                title="More options">
                                 <i class="fas fa-caret-down"></i>
                             </button>
                             <div class="refresh-dropdown-menu" id="refresh-dropdown-menu">
@@ -85,6 +126,31 @@
                         <select id="account-selector" class="account-selector" onchange="switchAccount(this.value)">
                             <option value="">Loading accounts...</option>
                         </select>
+                        <!-- Auth Section -->
+                        <div id="auth-section" class="auth-section" style="display: none;">
+                            <div class="auth-user">
+                                <div class="auth-avatar" id="auth-avatar">U</div>
+                                <div class="auth-info">
+                                    <span class="auth-email" id="auth-email">user@example.com</span>
+                                    <span class="auth-user-id" id="auth-user-id">user12345</span>
+                                </div>
+                            </div>
+                            <div class="invitation-badge">
+                                <button class="invitation-btn" onclick="viewPendingInvitations()"
+                                    title="View Invitations">
+                                    <i class="fas fa-envelope"></i>
+                                    Invitations
+                                </button>
+                                <span class="invitation-count" id="invitation-count" style="display: none;">0</span>
+                            </div>
+                            <button class="auth-logout-btn" onclick="handleLogout()" title="Logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                        <!-- Login Link (shown when not authenticated) -->
+                        <a href="{{ base_path }}/login" id="login-link" class="btn btn-primary" style="display: none;">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
                     </div>
                 </div>
 
@@ -138,8 +204,10 @@
                 <div class="quick-stats">
                     <div class="progress-ring-container">
                         <svg class="progress-ring" width="120" height="120">
-                            <circle class="progress-ring-circle-bg" stroke="#e5e7eb" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
-                            <circle class="progress-ring-circle" id="completion-ring" stroke="#10b981" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
+                            <circle class="progress-ring-circle-bg" stroke="#e5e7eb" stroke-width="8" fill="transparent"
+                                r="52" cx="60" cy="60" />
+                            <circle class="progress-ring-circle" id="completion-ring" stroke="#10b981" stroke-width="8"
+                                fill="transparent" r="52" cx="60" cy="60" />
                         </svg>
                         <div class="progress-text">
                             <span id="completion-rate">0%</span>
@@ -158,7 +226,8 @@
                             <i class="fas fa-filter"></i>
                             <span>Filters</span>
                         </button>
-                        <select id="hierarchy-account-selector" class="account-selector" onchange="switchAccountForHierarchy(this.value)">
+                        <select id="hierarchy-account-selector" class="account-selector"
+                            onchange="switchAccountForHierarchy(this.value)">
                             <option value="">Loading accounts...</option>
                         </select>
                         <button class="btn btn-primary" onclick="refreshHierarchy()">
@@ -172,42 +241,61 @@
                     </div>
                 </div>
 
-                <!-- Chart Filter Panel -->
-                <div class="hierarchy-filter-panel" id="hierarchy-filter-panel" style="display: none;">
-                    <div>
-                        <label>Search Tags</label>
-                        <input type="text" id="hierarchy-tag-search" class="filter-input" placeholder="e.g., pras,prod (3+ chars)">
-                    </div>
-                    <div>
-                        <label>Status</label>
-                        <select id="hierarchy-status-filter" class="filter-select">
+                <!-- Chart Filter Panel - Uses same design as Task Filters -->
+                <div class="task-filters-container" id="hierarchy-filters-container">
+                    <div class="task-filters-header sticky-header">
+                        <div class="search-wrapper">
+                            <input type="text" id="hierarchy-tag-search" class="filter-input"
+                                placeholder="Search Tags (e.g., pras, prod)" autocomplete="off"
+                                oninput="window.refreshHierarchyVisualization()">
+                        </div>
+                        <select id="hierarchy-status-filter" class="header-select"
+                            onchange="window.refreshHierarchyVisualization()">
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
                             <option value="completed">Completed</option>
                         </select>
+                        <button id="hierarchy-filter-toggle" class="btn-icon-only" title="Show Advanced Filters"
+                            onclick="toggleHierarchyFilters()">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button id="hierarchy-clear-filters-header" class="btn-icon-only" title="Clear All Filters"
+                            onclick="window.clearHierarchyFilters()" style="display:none;">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div>
-                        <label>Date Range</label>
-                        <input type="date" id="hierarchy-date-start" class="filter-input" style="width: 130px;">
-                        <span style="color: #6b7280;">to</span>
-                        <input type="date" id="hierarchy-date-end" class="filter-input" style="width: 130px;">
+                    <div id="hierarchy-filters-advanced" class="filter-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div>
+                            <div class="filter-section-title">Date Range</div>
+                            <div class="date-range-group">
+                                <input type="date" id="hierarchy-date-start" class="filter-input" placeholder="Start"
+                                    onchange="window.refreshHierarchyVisualization()">
+                                <span style="color:var(--text-light)">-</span>
+                                <input type="date" id="hierarchy-date-end" class="filter-input" placeholder="End"
+                                    onchange="window.refreshHierarchyVisualization()">
+                            </div>
+                        </div>
+                        <div class="filter-group-footer">
+                            <button id="hierarchy-apply-filters" class="btn btn-primary"
+                                style="width:100%; margin-bottom: 0.5rem;"
+                                onclick="window.refreshHierarchyVisualization()">
+                                <i class="fas fa-check"></i> Apply Filters
+                            </button>
+                            <button id="hierarchy-clear-filters" class="btn btn-secondary"
+                                style="width:100%;" onclick="window.clearHierarchyFilters()">
+                                <i class="fas fa-times"></i> Reset Filters
+                            </button>
+                        </div>
                     </div>
-                    <button class="filter-btn" onclick="applyChartFilters()">
-                        <i class="fas fa-search"></i>
-                        Apply
-                    </button>
-                    <button class="clear-btn" onclick="clearChartFilters()">
-                        <i class="fas fa-times"></i>
-                        Clear
-                    </button>
                 </div>
 
                 <!-- View Toggle Control -->
                 <div class="hierarchy-view-toggle" id="hierarchy-view-toggle">
                     <span class="view-mode-label">View Mode:</span>
                     <div class="view-mode-buttons">
-                        <button class="view-mode-btn active" data-view="graph" onclick="window.switchHierarchyView('graph')">
+                        <button class="view-mode-btn active" data-view="graph"
+                            onclick="window.switchHierarchyView('graph')">
                             📊 Graph
                         </button>
                         <button class="view-mode-btn" data-view="both" onclick="window.switchHierarchyView('both')">
@@ -227,9 +315,10 @@
                 <!-- Visualization Container -->
                 <div class="viz-container" id="hierarchy-viz-container">
                     <svg class="hierarchy-svg" id="hierarchy-viz"></svg>
-                    
+
                     <!-- Fullscreen exit button -->
-                    <button class="fullscreen-exit" id="fullscreen-exit" onclick="toggleFullscreen()" style="display: none;">
+                    <button class="fullscreen-exit" id="fullscreen-exit" onclick="toggleFullscreen()"
+                        style="display: none;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -246,62 +335,79 @@
                         </div>
                     </div>
                     <div class="task-panel-content">
+                        <!-- Task Panel Filters - Uses same styling as main Tasks page -->
                         <div class="task-filters">
-                            <select id="node-task-status-filter" class="filter-select">
-                                <option value="">All Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                            </select>
-                            <select id="node-task-priority-filter" class="filter-select">
-                                <option value="">All Priorities</option>
-                                <option value="critical">Critical</option>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low">Low</option>
-                            </select>
-                            <input type="text" id="node-task-search-filter" class="filter-input" placeholder="Search tasks...">
-                            <input type="text" id="node-task-project-filter" class="filter-input" placeholder="Filter by project...">
-                            <input type="text" id="node-task-tags-filter" class="filter-input" placeholder="Filter by tags (comma separated)...">
-                            
+                            <div class="filter-row" style="display: flex; gap: 0.5rem; align-items: center;">
+                                <select id="node-task-list-filter" class="filter-select" style="flex: 1;">
+                                    <option value="">Tasks for: All Tasks</option>
+                                </select>
+                                <button class="btn btn-secondary" onclick="closeTaskPanel()">
+                                    <i class="fas fa-times"></i> Close
+                                </button>
+                            </div>
+                            <div class="filter-row">
+                                <select id="node-task-status-filter" class="filter-select">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                                <select id="node-task-priority-filter" class="filter-select">
+                                    <option value="">All Priorities</option>
+                                    <option value="critical">Critical</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                            <input type="text" id="node-task-search-filter" class="filter-input"
+                                placeholder="Search tasks..." oninput="filterNodeTasks()">
+                            <input type="text" id="node-task-project-filter" class="filter-input"
+                                placeholder="Filter by project..." oninput="filterNodeTasks()">
+                            <input type="text" id="node-task-tags-filter" class="filter-input"
+                                placeholder="Filter by tags (comma separated)..." oninput="filterNodeTasks()">
+
                             <!-- Date Filter Section -->
                             <div class="filter-section date-filter-section">
                                 <div class="filter-row">
                                     <label>Date Field:</label>
-                                    <select id="node-task-date-field" class="filter-select">
+                                    <select id="node-task-date-field" class="filter-select" onchange="filterNodeTasks()">
                                         <option value="due">Due Date</option>
                                         <option value="created_at">Created Date</option>
                                         <option value="modified_at">Modified Date</option>
                                     </select>
                                 </div>
                                 <div class="filter-row date-range-filter">
-                                    <input type="date" id="node-task-date-start" class="filter-input" placeholder="From date...">
+                                    <input type="date" id="node-task-date-start" class="filter-input"
+                                        placeholder="From date..." onchange="filterNodeTasks()">
                                     <span style="color: #6b7280; margin: 0 0.5rem;">to</span>
-                                    <input type="date" id="node-task-date-end" class="filter-input" placeholder="To date...">
+                                    <input type="date" id="node-task-date-end" class="filter-input"
+                                        placeholder="To date..." onchange="filterNodeTasks()">
                                 </div>
                             </div>
-                            
+
                             <!-- Sort Section -->
                             <div class="filter-section sort-filter-section">
                                 <div class="filter-row">
                                     <label>Sort By:</label>
-                                    <select id="node-task-sort-field" class="filter-select">
+                                    <select id="node-task-sort-field" class="filter-select" onchange="filterNodeTasks()">
                                         <option value="due">Due Date</option>
                                         <option value="created_at">Created Date</option>
                                         <option value="modified_at">Modified Date</option>
                                         <option value="priority">Priority</option>
                                         <option value="title">Title</option>
                                     </select>
-                                    <select id="node-task-sort-order" class="filter-select">
+                                    <select id="node-task-sort-order" class="filter-select" onchange="filterNodeTasks()">
                                         <option value="desc" selected>Descending</option>
                                         <option value="asc">Ascending</option>
                                     </select>
                                 </div>
                             </div>
-                            
+
                             <!-- Clear Button -->
                             <div class="filter-section clear-filter-section">
-                                <button id="node-task-clear-filters" class="btn btn-secondary" onclick="clearNodeFilters()">
+                                <button id="node-task-clear-filters" class="btn btn-secondary"
+                                    onclick="clearNodeFilters()">
                                     <i class="fas fa-times"></i> Clear All Filters
                                 </button>
                             </div>
@@ -318,90 +424,269 @@
                 <div class="header">
                     <h1><i class="fas fa-tasks mr-2"></i>Task Management</h1>
                     <div class="header-actions">
-                        <select id="tasks-account-selector" class="account-selector" onchange="switchAccountForTasks(this.value)">
+                        <select id="tasks-account-selector" class="account-selector"
+                            onchange="switchAccountForTasks(this.value)">
                             <option value="">Loading accounts...</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Task Filters -->
-                <div class="task-filters-bar">
-                    <input type="text" id="task-search-filter" class="filter-input" placeholder="Search tasks..." oninput="filterTasks()">
-                    <select id="task-status-filter" class="filter-select" onchange="filterTasks()">
-                        <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                    <select id="task-priority-filter" class="filter-select" onchange="filterTasks()">
-                        <option value="">All Priorities</option>
-                        <option value="critical">Critical</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
-                    <div class="filter-multiselect">
-                        <label class="filter-label">Filter by List</label>
-                        <div class="multiselect-container" id="task-list-filter-container">
-                            <!-- Multiselect will be initialized here -->
+                <!-- Container for TasksView -->
+                <div id="tasks-view-container">
+                    <!-- Task Filters -->
+                    <div class="task-filters-container" id="task-filters-container">
+                        <!-- Scrollable content area with sticky header -->
+                        <div class="task-filters-content" id="task-filters-content">
+                            <!-- Header: Search + Primary Actions (Sticky) -->
+                            <div class="task-filters-header sticky-header">
+                                <div class="search-wrapper">
+                                    <input type="text" id="task-search-filter" class="filter-input"
+                                        placeholder="Search tasks..." autocomplete="off">
+                                </div>
+
+                                <!-- Primary Status Filter -->
+                                <select id="task-status-filter" class="header-select">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+
+                                <button id="task-filter-toggle" class="btn-icon-only" title="Show Advanced Filters"
+                                    onclick="toggleTaskFilters()">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+
+                                <button id="task-clear-filters-header" class="btn-icon-only" title="Clear All Filters"
+                                    style="display:none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <!-- Advanced filter sections (hidden by default, shown when filters expanded) -->
+                            <div id="task-filters-advanced" style="display: none;">
+                                <!-- Column 1: Priority & Lists -->
+                                <div class="filter-group">
+                                    <div class="filter-section-title">Properties</div>
+                                    <select id="task-priority-filter" class="filter-select" onchange="filterTasks()">
+                                        <option value="">All Priorities</option>
+                                        <option value="critical">Critical</option>
+                                        <option value="high">High</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                    </select>
+                                    <div class="multiselect-container" id="task-list-filter">
+                                        <!-- Multiselect will be initialized here -->
+                                    </div>
+                                </div>
+
+                                <!-- Column 2: Tags -->
+                                <div class="filter-group">
+                                    <div class="filter-section-title">Tags</div>
+                                    <div class="multiselect-container" id="task-tags-filter">
+                                        <!-- Multiselect will be initialized here -->
+                                    </div>
+                                </div>
+
+                                <!-- Column 3: Date Filtering -->
+                                <div class="filter-group">
+                                    <div class="filter-section-title">Date Range</div>
+                                    <select id="task-date-field" class="filter-select" onchange="filterTasks()">
+                                        <option value="due">Due Date</option>
+                                        <option value="created_at">Created</option>
+                                        <option value="modified_at">Modified</option>
+                                    </select>
+                                    <div class="date-range-group">
+                                        <input type="date" id="task-date-start" class="filter-input" placeholder="Start"
+                                            onchange="filterTasks()">
+                                        <span style="color:var(--text-light)">-</span>
+                                        <input type="date" id="task-date-end" class="filter-input" placeholder="End"
+                                            onchange="filterTasks()">
+                                    </div>
+                                </div>
+
+                                <!-- Column 4: Sorting & Reset -->
+                                <div class="filter-group">
+                                    <div class="filter-section-title">Sort & Actions</div>
+                                    <div class="date-range-group">
+                                        <select id="task-sort-field" class="filter-select" style="flex:2"
+                                            onchange="filterTasks()">
+                                            <option value="due">Sort: Due Date</option>
+                                            <option value="created_at">Sort: Created</option>
+                                            <option value="modified_at">Sort: Modified</option>
+                                            <option value="priority">Sort: Priority</option>
+                                            <option value="title">Sort: Title</option>
+                                        </select>
+                                        <select id="task-sort-order" class="filter-select" style="flex:1"
+                                            onchange="filterTasks()">
+                                            <option value="desc">Desc</option>
+                                            <option value="asc">Asc</option>
+                                        </select>
+                                    </div>
+                                    <button id="task-clear-filters" class="btn btn-secondary"
+                                        style="width:100%; margin-top: auto;" onclick="clearTasksFilters()">
+                                        <i class="fas fa-times"></i> Reset Filters
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="filter-multiselect">
-                        <label class="filter-label">Filter by Tags</label>
-                        <div class="multiselect-container" id="task-tags-filter-container">
-                            <!-- Multiselect will be initialized here -->
-                        </div>
+
+                    <!-- Tasks Grid -->
+                    <div class="tasks-count-display" id="tasks-count-display">
+                        <span id="tasks-count-text">Loading...</span>
                     </div>
-                    
-                    <!-- Date Filter Section -->
-                    <div class="filter-section date-filter-section">
-                        <div class="filter-row">
-                            <label>Date Field:</label>
-                            <select id="task-date-field" class="filter-select" onchange="filterTasks()">
-                                <option value="due">Due Date</option>
-                                <option value="created_at">Created Date</option>
-                                <option value="modified_at">Modified Date</option>
-                            </select>
-                        </div>
-                        <div class="filter-row date-range-filter">
-                            <input type="date" id="task-date-start" class="filter-input" placeholder="From date..." onchange="filterTasks()">
-                            <span style="color: #6b7280; margin: 0 0.5rem;">to</span>
-                            <input type="date" id="task-date-end" class="filter-input" placeholder="To date..." onchange="filterTasks()">
-                        </div>
+                    <div class="tasks-grid" id="tasks-grid">
+                        <!-- Tasks will be populated here -->
                     </div>
-                    
-                    <!-- Sort Section -->
-                    <div class="filter-section sort-filter-section">
-                        <div class="filter-row">
-                            <label>Sort By:</label>
-                            <select id="task-sort-field" class="filter-select" onchange="filterTasks()">
-                                <option value="due">Due Date</option>
-                                <option value="created_at">Created Date</option>
-                                <option value="modified_at">Modified Date</option>
-                                <option value="priority">Priority</option>
-                                <option value="title">Title</option>
-                            </select>
-                            <select id="task-sort-order" class="filter-select" onchange="filterTasks()">
-                                <option value="desc" selected>Descending</option>
-                                <option value="asc">Ascending</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Clear Button -->
-                    <div class="filter-section clear-filter-section">
-                        <button id="task-clear-filters" class="btn btn-secondary" onclick="clearTasksFilters()">
-                            <i class="fas fa-times"></i> Clear All Filters
+                </div>
+            </section>
+
+            <!-- Tags Import Section -->
+            <section id="tags-import-section" class="section" style="display: none;">
+                <div class="header">
+                    <h1><i class="fas fa-file-import mr-2"></i>Tags Import</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="loadTagsForImport()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
                         </button>
                     </div>
                 </div>
 
-                <!-- Tasks Grid -->
-                <div class="tasks-count-display" id="tasks-count-display">
-                    <span id="tasks-count-text">Loading...</span>
+                <div class="tags-import-container">
+                    <div class="tags-import-info">
+                        <p><i class="fas fa-info-circle"></i> Import tags from your Google Tasks to manage them in the
+                            dashboard.</p>
+                    </div>
+
+                    <div class="tags-import-actions">
+                        <button class="btn btn-secondary" onclick="viewTagStatistics()">
+                            <i class="fas fa-chart-bar"></i>
+                            View Statistics
+                        </button>
+                        <button class="btn btn-primary" onclick="importTagsDryRun()">
+                            <i class="fas fa-eye"></i>
+                            Dry Run
+                        </button>
+                        <button class="btn btn-success" onclick="importTagsFromGoogle()">
+                            <i class="fas fa-file-import"></i>
+                            Import Tags
+                        </button>
+                        <button class="btn btn-info" onclick="syncTags()">
+                            <i class="fas fa-sync"></i>
+                            Sync Tags
+                        </button>
+                    </div>
+
+                    <div id="tags-import-results" class="tags-import-results">
+                        <!-- Results will be displayed here -->
+                    </div>
                 </div>
-                <div class="tasks-grid" id="tasks-grid">
-                    <!-- Tasks will be populated here -->
+            </section>
+
+            <!-- Tags Section -->
+            <section id="tags-section" class="section" style="display: none;">
+                <div class="header">
+                    <h1><i class="fas fa-tags mr-2"></i>Tags Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openAddTagModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Tag
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshTags()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="tags-management-container">
+                    <!-- Tags Filters - Unified Design -->
+                    <div class="task-filters-container" id="tags-filters-container">
+                        <div class="task-filters-header sticky-header">
+                            <div class="search-wrapper">
+                                <input type="text" id="tag-search" class="filter-input" placeholder="Search tags..."
+                                    oninput="filterTags()" autocomplete="off">
+                            </div>
+                            <select id="tag-type-filter" class="header-select" onchange="filterTags()">
+                                <option value="all">All Types</option>
+                                <option value="regular">Regular Tags</option>
+                                <option value="account">Account Tags</option>
+                            </select>
+                            <select id="tag-sort" class="header-select" onchange="sortTags()">
+                                <option value="name">Sort by Name</option>
+                                <option value="usage">Sort by Usage</option>
+                                <option value="recent">Sort by Recent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="tags-grid" class="tags-grid">
+                        <!-- Tags will be displayed here -->
+                    </div>
+
+                    <div id="empty-state" class="empty-state" style="display: none;">
+                        <i class="fas fa-tags"></i>
+                        <p>No tags found</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Connected Accounts Section -->
+            <section id="connected-accounts-section" class="section" style="display: none;">
+                <div class="header">
+                    <h1><i class="fas fa-users mr-2"></i>Connected Accounts</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="loadConnectedAccounts()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="connected-accounts-container">
+                    <div class="connected-accounts-info">
+                        <p><i class="fas fa-info-circle"></i> Manage your connected accounts and user connections.</p>
+                    </div>
+
+                    <div id="connected-accounts-list" class="connected-accounts-list">
+                        <!-- Connected accounts will be displayed here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Remote Sync Section -->
+            <section id="remote-sync-section" class="section" style="display: none;">
+                <div class="header">
+                    <h1><i class="fas fa-cloud-sync mr-2"></i>Remote Sync</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="loadRemoteSync()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="remote-sync-container">
+                    <div class="remote-sync-info">
+                        <p><i class="fas fa-info-circle"></i> Manage remote synchronization settings and status.</p>
+                    </div>
+
+                    <div id="remote-sync-status" class="remote-sync-status">
+                        <!-- Remote sync status will be displayed here -->
+                    </div>
+
+                    <div class="remote-sync-actions">
+                        <button class="btn btn-primary" onclick="startRemoteSync()">
+                            <i class="fas fa-sync"></i>
+                            Start Sync
+                        </button>
+                        <button class="btn btn-secondary" onclick="configureRemoteSync()">
+                            <i class="fas fa-cog"></i>
+                            Configure
+                        </button>
+                    </div>
                 </div>
             </section>
         </main>
@@ -414,7 +699,7 @@
                 <h2><i class="fas fa-cog"></i> Settings</h2>
                 <button class="modal-close" onclick="closeSettings()">&times;</button>
             </div>
-            
+
             <div class="settings-section">
                 <h3>Auto-Refresh</h3>
                 <div class="setting-item">
@@ -441,7 +726,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="settings-section">
                 <h3>Display</h3>
                 <div class="setting-item">
@@ -467,7 +752,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button class="btn-secondary-modal" onclick="closeSettings()">Close</button>
             </div>
@@ -481,6 +766,271 @@
     </div>
 
     <script type="module" src="{{ base_path }}/static/js/hierarchy.js"></script>
-    <script type="module" src="{{ base_path }}/static/js/dashboard.js?v=4"></script>
+    <script type="module" src="{{ base_path }}/static/js/dashboard.js?v=7"></script>
+    <script type="module" src="{{ base_path }}/static/js/tags.js"></script>
+
+    <!-- Invitation Modal -->
+    <div class="invitation-modal-overlay" id="invitation-modal" style="display: none;">
+        <div class="invitation-modal">
+            <div class="invitation-modal-header">
+                <h2><i class="fas fa-envelope-open-text"></i> Pending Invitations</h2>
+                <button class="invitation-close-btn" onclick="closeInvitationModal()">&times;</button>
+            </div>
+            <div class="invitation-modal-body">
+                <ul class="invitation-list" id="invitation-list">
+                    <!-- Invitations will be populated here -->
+                </ul>
+                <div class="invitation-empty" id="invitation-empty" style="display: none;">
+                    <div class="invitation-empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3>No Pending Invitations</h3>
+                    <p>You don't have any pending invitations at this time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Details Modal -->
+    <div class="modal-overlay" id="task-details-modal" style="display: none;">
+        <div class="modal-content task-details-modal-content"
+            style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2 id="modal-task-title" style="word-break: break-word; line-height: 1.4;">Task Details</h2>
+                <button class="modal-close" onclick="closeTaskDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 24px; overflow-y: auto; flex: 1;">
+                <div class="task-details-header"
+                    style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+                    <span id="modal-task-status" class="task-status-badge"></span>
+                    <span id="modal-task-priority" class="task-priority-badge"></span>
+                    <span id="modal-task-due" class="task-date-badge"
+                        style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: #f3f4f6; border-radius: 4px; font-size: 12px; color: #4b5563;"></span>
+                </div>
+
+                <div class="task-details-section">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1f2937;">Description &
+                        Notes</h3>
+                    <div id="modal-task-notes"
+                        style="white-space: pre-wrap; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; min-height: 100px; font-size: 14px; line-height: 1.6;">
+                    </div>
+                </div>
+
+                <div class="task-details-section" style="margin-top: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1f2937;">Tags</h3>
+                    <div id="modal-task-tags" class="task-tags-container"
+                        style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
+
+                <div class="task-details-meta"
+                    style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 13px; color: #6b7280;">
+                    <div>
+                        <span style="font-weight: 500;">List:</span> <span id="modal-task-list"></span>
+                    </div>
+                    <div>
+                        <span style="font-weight: 500;">Account:</span> <span id="modal-task-account"></span>
+                    </div>
+                    <div>
+                        <span style="font-weight: 500;">Updated:</span> <span id="modal-task-updated"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"
+                style="padding: 16px 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn btn-secondary" onclick="closeTaskDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Tag Add/Edit Modal -->
+    <div class="modal-overlay" id="tag-modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="tag-modal-title"><i class="fas fa-plus-circle"></i> Add New Tag</h2>
+                <button class="modal-close" onclick="closeTagModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="tag-form">
+                    <input type="hidden" id="tag-id" name="id">
+                    <input type="hidden" id="tag-color" name="color" value="blue">
+
+                    <div class="form-group">
+                        <label for="tag-name">Tag Name</label>
+                        <input type="text" id="tag-name" name="name" class="form-control"
+                            placeholder="e.g. urgent, project-x" required>
+                        <small class="form-text text-muted">Do not include # or @ prefix.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tag Type</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="tag_type" value="regular" checked>
+                                <span class="radio-custom"></span>
+                                Regular Tag (#)
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="tag_type" value="account">
+                                <span class="radio-custom"></span>
+                                Account Tag (@)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Color</label>
+                        <div class="color-picker" id="color-picker">
+                            <div class="color-option active" data-color="blue" style="background-color: #3b82f6;"></div>
+                            <div class="color-option" data-color="green" style="background-color: #10b981;"></div>
+                            <div class="color-option" data-color="yellow" style="background-color: #f59e0b;"></div>
+                            <div class="color-option" data-color="red" style="background-color: #ef4444;"></div>
+                            <div class="color-option" data-color="purple" style="background-color: #8b5cf6;"></div>
+                            <div class="color-option" data-color="pink" style="background-color: #ec4899;"></div>
+                            <div class="color-option" data-color="gray" style="background-color: #6b7280;"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tag-description">Description (Optional)</label>
+                        <textarea id="tag-description" name="description" class="form-control" rows="3"
+                            placeholder="What is this tag for?"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" id="tag-submit-btn">
+                        <i class="fas fa-plus"></i> Create Tag
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Tag Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Delete Tag</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this tag? This action cannot be undone.</p>
+                <div id="delete-tag-preview" class="delete-tag-preview" style="margin: 15px 0;"></div>
+                <p class="text-muted" style="font-size: 0.9em;">
+                    This tag is currently used in <strong id="tag-usage-count">0</strong> tasks.
+                    Deleting the tag will remove it from all these tasks.
+                </p>
+                <div class="modal-actions"
+                    style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                    <button class="btn btn-danger" id="confirm-delete-btn">Delete Tag</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Tasks with Tag Modal -->
+    <div class="modal-overlay" id="tasks-modal-overlay" style="display: none;">
+        <div class="modal-content"
+            style="max-width: 900px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2><i class="fas fa-tasks"></i> Tasks with tag: <span id="view-tag-name"
+                        style="color: var(--primary-color);"></span></h2>
+                <button class="modal-close" onclick="closeTasksModal()">&times;</button>
+            </div>
+            <div class="modal-body"
+                style="flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+                <div id="tag-tasks-list" class="tag-tasks-list" style="flex: 1; overflow-y: auto; padding: 15px;">
+                    <!-- Tasks will be loaded here by TaskViewManager -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTasksModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global toggle function for task filters -->
+    <script>
+        function toggleTaskFilters() {
+            const advancedSection = document.getElementById('task-filters-advanced');
+            const container = document.getElementById('task-filters-container');
+            const btn = document.getElementById('task-filter-toggle');
+            
+            if (advancedSection && container && btn) {
+                const isHidden = advancedSection.style.display === 'none' || getComputedStyle(advancedSection).display === 'none';
+                
+                if (isHidden) {
+                    advancedSection.style.display = 'grid';
+                    container.classList.remove('collapsed');
+                    btn.classList.add('active');
+                    btn.title = 'Hide Advanced Filters';
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-chevron-up';
+                } else {
+                    advancedSection.style.display = 'none';
+                    container.classList.add('collapsed');
+                    btn.classList.remove('active');
+                    btn.title = 'Show Advanced Filters';
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-filter';
+                }
+            }
+        }
+
+        // Hierarchy filter toggle function - unified design
+        function toggleHierarchyFilters() {
+            const contentSection = document.getElementById('hierarchy-filters-advanced');
+            const container = document.getElementById('hierarchy-filters-container');
+            const btn = document.getElementById('hierarchy-filter-toggle');
+
+            if (contentSection && container && btn) {
+                const isHidden = contentSection.style.display === 'none' || getComputedStyle(contentSection).display === 'none';
+
+                if (isHidden) {
+                    contentSection.style.display = 'grid';
+                    container.classList.remove('collapsed');
+                    btn.classList.add('active');
+                    btn.title = 'Hide Advanced Filters';
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-chevron-up';
+                } else {
+                    contentSection.style.display = 'none';
+                    container.classList.add('collapsed');
+                    btn.classList.remove('active');
+                    btn.title = 'Show Advanced Filters';
+                    const icon = btn.querySelector('i');
+                    if (icon) icon.className = 'fas fa-filter';
+                }
+            }
+        }
+
+        // Clear hierarchy filters (uses the one from hierarchy-filters.js which calls refreshHierarchyVisualization)
+        function clearHierarchyFilters() {
+            if (typeof window.clearHierarchyFilters === 'function') {
+                window.clearHierarchyFilters();
+            }
+        }
+
+        // Toggle chart filters (legacy function for backward compatibility)
+        function toggleChartFilters() {
+            toggleHierarchyFilters();
+        }
+
+        // Apply chart filters (legacy function for backward compatibility)
+        function applyChartFilters() {
+            // Filters are now applied automatically via event listeners
+            console.log('Filters applied automatically');
+        }
+
+        // Clear chart filters (legacy function for backward compatibility)
+        function clearChartFilters() {
+            clearHierarchyFilters();
+        }
+    </script>
+    
+    <!-- Load TaskViewManager and dependencies as modules -->
+    <script type="module" src="{{ base_path }}/static/js/task-card.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/multiselect.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/task-view-manager.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/task-edit-modal.js"></script>
 </body>
+
 </html>

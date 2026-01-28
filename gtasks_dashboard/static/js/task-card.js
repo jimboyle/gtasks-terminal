@@ -3,11 +3,11 @@
  * Creates and renders task cards for both main tasks grid and node tasks
  */
 
-import { 
-    getDateStatus, 
-    getDateStatusBadge, 
-    getCompactDateDisplay, 
-    getNotesSection, 
+import {
+    getDateStatus,
+    getDateStatusBadge,
+    getCompactDateDisplay,
+    getNotesSection,
     getTagsDisplay,
     getPriorityClass,
     getPriorityIcon,
@@ -24,46 +24,79 @@ export function createTaskCard(task, options = {}) {
     const card = document.createElement('div');
     card.className = options.isNodeTask ? 'node-task-card' : 'task-card';
     card.setAttribute('data-task-id', task.id);
-    
+
     const priorityClass = getPriorityClass(task.calculated_priority);
     const priorityIcon = getPriorityIcon(task.calculated_priority);
     const statusClass = getStatusClass(task.status);
-    
+
     // Date status calculation
     const dateStatus = getDateStatus(task.due);
     const dateStatusBadge = getDateStatusBadge(dateStatus);
-    
+
     // Compact date display
     const compactDates = getCompactDateDisplay(task);
-    
+
     // Notes section (expandable)
     const notesSection = getNotesSection(task);
-    
+
     // Tags display
     const tagsDisplay = getTagsDisplay(task);
-    
+
     // Check if this task has dependencies (for node task cards)
     const hasDeps = task.dependencies && task.dependencies.length > 0;
-    const depsInfo = hasDeps ? 
+    const depsInfo = hasDeps ?
         `<small style="color: #f59e0b; font-size: 0.7rem; display: block; margin-top: 0.25rem;">
             <i class="fas fa-link"></i> ${task.dependencies.length} dependency(ies)
         </small>` : '';
-    
+
     // Complete button - show checkmark for incomplete, completed for complete
     const isCompleted = task.status === 'completed';
+    
+    // Complete button (use data attributes instead of inline onclick)
     const completeBtnHtml = `
-        <div class="task-complete-btn ${isCompleted ? 'completed' : ''}" 
-             onclick="${isCompleted ? '' : `completeTask('${task.id}')`}"
-             title="${isCompleted ? 'Completed' : 'Mark as complete'}">
+        <button class="task-btn task-complete-btn ${isCompleted ? 'completed' : ''}" 
+                data-task-id="${task.id}"
+                data-action="${isCompleted ? 'none' : 'complete'}"
+                title="${isCompleted ? 'Completed' : 'Mark as complete'}"
+                ${isCompleted ? 'disabled' : ''}>
             ${isCompleted ? '✅' : '⭕'}
-        </div>
+        </button>
     `;
     
+    // Incomplete button (for completed tasks - click to mark as pending)
+    const incompleteBtnHtml = isCompleted ? `
+        <button class="task-btn task-btn-action task-incomplete-btn" 
+                data-task-id="${task.id}"
+                data-action="incomplete"
+                title="Mark as incomplete">
+            ↩️
+        </button>
+    ` : '';
+    
+    // Edit button (for all tasks)
+    const editBtnHtml = `
+        <button class="task-btn task-btn-action task-edit-btn" 
+                data-task-id="${task.id}"
+                data-action="edit"
+                title="Edit task">
+            ✏️
+        </button>
+    `;
+    
+    // Action buttons container - better alignment
+    const actionButtonsHtml = `
+        <div class="task-actions">
+            ${completeBtnHtml}
+            ${incompleteBtnHtml}
+            ${editBtnHtml}
+        </div>
+    `;
+
     if (options.isNodeTask) {
         // Node task card HTML
         card.innerHTML = `
             <div class="node-task-header">
-                ${completeBtnHtml}
+                ${actionButtonsHtml}
                 <span class="priority-icon">🔸</span>
                 <div class="node-task-title">${task.title}</div>
                 ${dateStatusBadge}
@@ -85,7 +118,7 @@ export function createTaskCard(task, options = {}) {
     } else {
         // Main task card HTML
         card.innerHTML = `
-            ${completeBtnHtml}
+            ${actionButtonsHtml}
             <div class="task-card-header">
                 <span class="task-priority-badge ${priorityClass}">${priorityIcon} ${task.calculated_priority || task.priority}</span>
                 <span class="task-status-badge ${statusClass}">${task.status}</span>
@@ -103,28 +136,40 @@ export function createTaskCard(task, options = {}) {
             </div>
         `;
     }
-    
-    // Add click handler for expanding notes
+
+    // Add click handler for viewing full details
     const notesToggle = card.querySelector('.notes-toggle');
     if (notesToggle) {
-        notesToggle.addEventListener('click', function() {
-            const notesContent = this.nextElementSibling;
-            const isExpanded = this.getAttribute('data-expanded') === 'true';
-            
-            if (isExpanded) {
-                // Collapse
-                notesContent.style.maxHeight = '0px';
-                this.textContent = 'Show more 📓';
-                this.setAttribute('data-expanded', 'false');
+        notesToggle.innerHTML = 'View Details 📄';
+        notesToggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (window.openTaskDetailsModal) {
+                // Pass the full task object if possible, but here we might only have access to 'task' from closure
+                window.openTaskDetailsModal(task);
             } else {
-                // Expand
-                notesContent.style.maxHeight = notesContent.scrollHeight + 'px';
-                this.textContent = 'Show less 📓';
-                this.setAttribute('data-expanded', 'true');
+                console.warn('openTaskDetailsModal function not found');
             }
         });
     }
     
+    // Add event listeners for action buttons (complete, incomplete, edit)
+    const actionButtons = card.querySelectorAll('.task-btn[data-action]');
+    actionButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const action = this.getAttribute('data-action');
+            const taskId = this.getAttribute('data-task-id');
+            
+            if (action === 'complete' && window.completeTask) {
+                window.completeTask(taskId);
+            } else if (action === 'incomplete' && window.incompleteTask) {
+                window.incompleteTask(taskId);
+            } else if (action === 'edit' && window.openEditTaskModal) {
+                window.openEditTaskModal(taskId);
+            }
+        });
+    });
+
     return card;
 }
 
@@ -136,14 +181,14 @@ export function createTaskCard(task, options = {}) {
  */
 export function renderTasks(tasks, container, options = {}) {
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     if (!tasks || tasks.length === 0) {
         container.innerHTML = '<p style="text-align: center; color: #6b7280;">No tasks found.</p>';
         return;
     }
-    
+
     tasks.forEach(task => {
         const card = createTaskCard(task, options);
         container.appendChild(card);
@@ -159,6 +204,6 @@ export function renderTasks(tasks, container, options = {}) {
 export function renderTasksGrid(tasks, containerId, options = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     renderTasks(tasks, container, options);
 }

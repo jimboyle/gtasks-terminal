@@ -239,9 +239,13 @@ export function createMultiselect(config) {
 
 // Initialize multiselect for a filter
 export function initMultiselectFilter(config) {
-    const container = document.getElementById(`${config.id}-container`);
+    // Support both formats: with or without -container suffix
+    let container = document.getElementById(config.id);
     if (!container) {
-        console.error(`Multiselect container not found: ${config.id}-container`);
+        container = document.getElementById(`${config.id}-container`);
+    }
+    if (!container) {
+        console.error(`Multiselect container not found: ${config.id} or ${config.id}-container`);
         return null;
     }
 

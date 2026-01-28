@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>GTasks Dashboard - Login</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dashboard.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dark-mode.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/components.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/login.css">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --background-color: #f3f4f6;
+            --card-background: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--background-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+        
+        .login-card {
+            background: var(--card-background);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .login-logo {
+            width: 64px;
+            height: 64px;
+            background: var(--primary-color);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+        
+        .login-logo i {
+            font-size: 32px;
+            color: white;
+        }
+        
+        .login-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 8px;
+        }
+        
+        .login-header p {
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-group input::placeholder {
+            color: #9ca3af;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 12px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 16px;
+        }
+        
+        .login-btn:hover {
+            background: var(--primary-hover);
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+        
+        .divider span {
+            padding: 0 16px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .dummy-login-btn {
+            width: 100%;
+            padding: 12px 24px;
+            background: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .dummy-login-btn:hover {
+            background: #059669;
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .user-info {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .user-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .user-info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .user-info-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .user-info-value {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+        
+        .logout-btn {
+            width: 100%;
+            padding: 12px 24px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Login Form -->
+            <div id="login-form-section">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h1>GTasks Dashboard</h1>
+                    <p>Sign in to access your tasks</p>
+                </div>
+                
+                {% if error %}
+                <div class="alert alert-error">{{ error }}</div>
+                {% endif %}
+                
+                {% if success %}
+                <div class="alert alert-success">{{ success }}</div>
+                {% endif %}
+                
+                <form id="login-form" method="POST" action="{{ base_path }}/login">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="api_key">QERDS API Key</label>
+                        <input type="password" id="api_key" name="api_key" placeholder="Enter your QERDS API key" required>
+                    </div>
+                    
+                    <button type="submit" class="login-btn" id="login-btn">
+                        <span class="btn-text">Sign In</span>
+                        <span class="spinner hidden"><span class="loading-spinner"></span></span>
+                    </button>
+                </form>
+                
+                <div class="divider">
+                    <span>or</span>
+                </div>
+                
+                <form id="dummy-login-form" method="POST" action="{{ base_path }}/login/dummy">
+                    <div class="form-group">
+                        <label for="dummy_email">Demo Account Email</label>
+                        <input type="email" id="dummy_email" name="email" placeholder="Enter demo email (e.g., user@example.com)" value="demo@example.com">
+                    </div>
+                    <button type="submit" class="dummy-login-btn" id="dummy-login-btn">
+                        <i class="fas fa-flask"></i> Sign in with Demo Account
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Logged In State -->
+            <div id="logged-in-section" class="hidden">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <h1>Welcome Back!</h1>
+                    <p>You are currently signed in</p>
+                </div>
+                
+                <div class="user-info">
+                    <div class="user-info-item">
+                        <span class="user-info-label">User ID</span>
+                        <span class="user-info-value" id="user-id">-</span>
+                    </div>
+                    <div class="user-info-item">
+                        <span class="user-info-label">Email</span>
+                        <span class="user-info-value" id="user-email">-</span>
+                    </div>
+                    <div class="user-info-item">
+                        <span class="user-info-label">Created</span>
+                        <span class="user-info-value" id="user-created">-</span>
+                    </div>
+                    <div class="user-info-item">
+                        <span class="user-info-label">Status</span>
+                        <span class="user-info-value" id="user-status">-</span>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ base_path }}/logout">
+                    <button type="submit" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                </form>
+            </div>
+            
+            <a href="{{ base_path }}/dashboard" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // Handle login form submission with loading state
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+            btn.querySelector('.btn-text').textContent = 'Signing in...';
+            btn.querySelector('.spinner').classList.remove('hidden');
+        });
+        
+        // Handle dummy login form submission with loading state
+        document.getElementById('dummy-login-form').addEventListener('submit', function(e) {
+            const btn = document.getElementById('dummy-login-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> Creating demo session...';
+        });
+        
+        // Check if user is already logged in
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('{{ base_path }}/api/auth/status');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    document.getElementById('login-form-section').classList.add('hidden');
+                    document.getElementById('logged-in-section').classList.remove('hidden');
+                    
+                    // Update user info
+                    document.getElementById('user-id').textContent = data.user.user_id;
+                    document.getElementById('user-email').textContent = data.user.email;
+                    document.getElementById('user-created').textContent = new Date(data.user.created_at).toLocaleDateString();
+                    document.getElementById('user-status').textContent = data.user.is_active ? 'Active' : 'Inactive';
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+    </script>
+</body>
+</html>

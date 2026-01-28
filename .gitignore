@@ -78,3 +78,4 @@ Thumbs.db
 #     files: '.*token|.*auth|.*credentials|.*turso|.*libsql'
 #     stages: [pre-commit]
 gtasks_dashboard/nginx.conf
+gtasks_dashboard/node_modules/*

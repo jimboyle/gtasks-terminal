@@ -78,191 +78,193 @@ const TasksDueToday: React.FC<TasksDueTodayProps> = ({ className = '' }) => {
 
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border ${className}`}>
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Tasks Due Today
-              </h3>
-            </div>
-            
-            {/* Task count */}
-            <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                {dueTodayStats.total}
-              </span>
-              
-              {/* Overdue indicator */}
-              {dueTodayStats.overdue > 0 && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  {dueTodayStats.overdue} overdue
-                </span>
-              )}
-              
-              {/* Due now indicator */}
-              {dueTodayStats.dueNow > 0 && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  {dueTodayStats.dueNow} due now
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Header actions */}
-          <div className="flex items-center space-x-2">
-            {/* Refresh button */}
-            <button
-              onClick={refreshData}
-              disabled={widgetState.isLoading}
-              className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-              title="Refresh"
-            >
-              <svg 
-                className={`w-4 h-4 ${widgetState.isLoading ? 'animate-spin' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-
-            {/* Filter toggle */}
-            <button
-              onClick={toggleFilters}
-              className={`p-2 rounded-md ${
-                widgetState.showFilters 
-                  ? 'text-blue-600 bg-blue-50' 
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-              title="Toggle filters"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-            </button>
-
-            {/* View mode toggle */}
-            <div className="flex rounded-md shadow-sm">
-              <button
-                onClick={() => changeViewMode('list')}
-                className={`px-3 py-1 text-xs font-medium rounded-l-md border ${
-                  widgetState.viewMode === 'list'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => changeViewMode('cards')}
-                className={`px-3 py-1 text-xs font-medium border-t border-b ${
-                  widgetState.viewMode === 'cards'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Cards
-              </button>
-              <button
-                onClick={() => changeViewMode('timeline')}
-                className={`px-3 py-1 text-xs font-medium rounded-r-md border ${
-                  widgetState.viewMode === 'timeline'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Timeline
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters Panel */}
-      {widgetState.showFilters && (
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <EnhancedFilterPanel />
-        </div>
-      )}
-
-      {/* Controls */}
-      <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* Bulk actions */}
-            {hasSelectedTasks && (
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 rounded-t-lg shadow-sm">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600 dark:text-gray-300">
-                  {selectedTasksCount} selected
-                </span>
-                <button
-                  onClick={clearTaskSelection}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  Clear
-                </button>
+                <svg className="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Tasks Due Today
+                </h3>
               </div>
-            )}
-
-            {/* Sort controls */}
-            <div className="flex items-center space-x-2">
-              <label className="text-sm text-gray-600 dark:text-gray-300">Sort by:</label>
-              <select
-                value={dueTodayFilters.sortBy}
-                onChange={(e) => handleSortChange(e.target.value, dueTodayFilters.sortOrder || 'asc')}
-                className="text-sm border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
-              >
-                <option value="due">Due Time</option>
-                <option value="priority">Priority</option>
-                <option value="created">Created Date</option>
-                <option value="title">Title</option>
-              </select>
-              <button
-                onClick={() => handleSortChange(
-                  dueTodayFilters.sortBy || 'due',
-                  dueTodayFilters.sortOrder === 'asc' ? 'desc' : 'asc'
+              
+              {/* Task count */}
+              <div className="flex items-center space-x-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                  {dueTodayStats.total}
+                </span>
+                
+                {/* Overdue indicator */}
+                {dueTodayStats.overdue > 0 && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {dueTodayStats.overdue} overdue
+                  </span>
                 )}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                
+                {/* Due now indicator */}
+                {dueTodayStats.dueNow > 0 && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    {dueTodayStats.dueNow} due now
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Header actions */}
+            <div className="flex items-center space-x-2">
+              {/* Refresh button */}
+              <button
+                onClick={refreshData}
+                disabled={widgetState.isLoading}
+                className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                title="Refresh"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d={
-                      dueTodayFilters.sortOrder === 'asc' 
-                        ? "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" 
-                        : "M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"
-                    } 
-                  />
+                <svg 
+                  className={`w-4 h-4 ${widgetState.isLoading ? 'animate-spin' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
-            </div>
 
-            {/* Grouping controls */}
-            <div className="flex items-center space-x-2">
-              <label className="text-sm text-gray-600 dark:text-gray-300">Group by:</label>
-              <select
-                value={dueTodayFilters.timeGrouping?.intervals || 'none'}
-                onChange={(e) => handleGroupChange(e.target.value)}
-                className="text-sm border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
+              {/* Filter toggle */}
+              <button
+                onClick={toggleFilters}
+                className={`p-2 rounded-md ${
+                  widgetState.showFilters 
+                    ? 'text-blue-600 bg-blue-50' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="Toggle filters"
               >
-                <option value="none">None</option>
-                <option value="hour">Hour</option>
-                <option value="morning">Morning/Afternoon/Evening</option>
-                <option value="afternoon">Business Hours</option>
-              </select>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
+
+              {/* View mode toggle */}
+              <div className="flex rounded-md shadow-sm">
+                <button
+                  onClick={() => changeViewMode('list')}
+                  className={`px-3 py-1 text-xs font-medium rounded-l-md border ${
+                    widgetState.viewMode === 'list'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => changeViewMode('cards')}
+                  className={`px-3 py-1 text-xs font-medium border-t border-b ${
+                    widgetState.viewMode === 'cards'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Cards
+                </button>
+                <button
+                  onClick={() => changeViewMode('timeline')}
+                  className={`px-3 py-1 text-xs font-medium rounded-r-md border ${
+                    widgetState.viewMode === 'timeline'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Timeline
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="text-sm text-gray-600 dark:text-gray-300">
-            {totalTasksCount} tasks
+        {/* Filters Panel */}
+        {widgetState.showFilters && (
+          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <EnhancedFilterPanel />
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Bulk actions */}
+              {hasSelectedTasks && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {selectedTasksCount} selected
+                  </span>
+                  <button
+                    onClick={clearTaskSelection}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+
+              {/* Sort controls */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600 dark:text-gray-300">Sort by:</label>
+                <select
+                  value={dueTodayFilters.sortBy}
+                  onChange={(e) => handleSortChange(e.target.value, dueTodayFilters.sortOrder || 'asc')}
+                  className="text-sm border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
+                >
+                  <option value="due">Due Time</option>
+                  <option value="priority">Priority</option>
+                  <option value="created">Created Date</option>
+                  <option value="title">Title</option>
+                </select>
+                <button
+                  onClick={() => handleSortChange(
+                    dueTodayFilters.sortBy || 'due',
+                    dueTodayFilters.sortOrder === 'asc' ? 'desc' : 'asc'
+                  )}
+                  className="p-1 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d={
+                        dueTodayFilters.sortOrder === 'asc' 
+                          ? "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" 
+                          : "M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"
+                      } 
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Grouping controls */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600 dark:text-gray-300">Group by:</label>
+                <select
+                  value={dueTodayFilters.timeGrouping?.intervals || 'none'}
+                  onChange={(e) => handleGroupChange(e.target.value)}
+                  className="text-sm border-gray-300 rounded-md dark:bg-gray-600 dark:border-gray-500"
+                >
+                  <option value="none">None</option>
+                  <option value="hour">Hour</option>
+                  <option value="morning">Morning/Afternoon/Evening</option>
+                  <option value="afternoon">Business Hours</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              {totalTasksCount} tasks
+            </div>
           </div>
         </div>
       </div>
