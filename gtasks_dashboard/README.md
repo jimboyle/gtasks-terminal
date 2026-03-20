@@ -43,13 +43,55 @@ gtasks_dashboard/
 
 ## 🚀 Quick Start
 
-### 1. **Run the Dashboard**
+### Option 1: Automated Setup (Recommended)
 ```bash
-# From the gtasks_dashboard directory
-python gtasks_dashboard.py
+# Run the setup script
+chmod +x setup.sh
+./setup.sh
 
-# Or with custom port
-python gtasks_dashboard.py 8082
+# The script will:
+# 1. Set up Python virtual environment
+# 2. Install dependencies
+# 3. Ask for your GTasks account name
+# 4. Create the account directory in ~/.gtasks/
+```
+
+### Option 2: Manual Setup
+
+#### Step 1: Set up Python environment
+```bash
+# Create virtual environment
+python3 -m venv gtasks-dashboard
+
+# Activate it
+source gtasks-dashboard/bin/activate
+
+# Install dependencies
+pip install -r requirements-python.txt
+```
+
+#### Step 2: Install GTasks CLI (for remote sync)
+```bash
+cd ../gtasks_cli
+pip install -e .
+```
+
+#### Step 3: Create your account directory
+```bash
+# Replace 'Work' with your preferred account name
+mkdir -p ~/.gtasks/Work
+
+# Sync with Google Tasks
+gtasks advanced-sync
+
+# Copy tasks to your account
+cp ~/.gtasks/tasks.db ~/.gtasks/Work/tasks.db
+```
+
+#### Step 4: Run the Dashboard
+```bash
+cd ../gtasks_dashboard
+python main_dashboard.py
 ```
 
 ### 2. **Access the Dashboard**
@@ -185,6 +227,39 @@ The refactored dashboard maintains full compatibility with:
 - **User Experience**: Smooth sidebar animations, responsive design
 - **Performance**: Efficient data loading, background updates
 - **Reliability**: Error handling, graceful degradation
+
+## 🔄 Remote Sync with Google Tasks
+
+### Syncing Your Tasks
+
+The dashboard reads tasks from your local `~/.gtasks/` database. To sync with Google Tasks:
+
+```bash
+# Activate the virtual environment (if not already activated)
+source gtasks-dashboard/bin/activate
+
+# Navigate to gtasks_cli
+cd ../gtasks_cli
+
+# Run advanced sync
+gtasks advanced-sync
+
+# Copy synced tasks to your account directory
+cp ~/.gtasks/tasks.db ~/.gtasks/Work/tasks.db
+```
+
+### Sync Workflow
+
+1. **Initial Sync**: Run `gtasks advanced-sync` to pull tasks from Google
+2. **Update Dashboard**: Copy the synced database to your account folder
+3. **Refresh Dashboard**: Refresh your browser to see updated tasks
+
+### Account Setup
+
+- Accounts are stored as directories in `~/.gtasks/`
+- Each account directory should contain a `tasks.db` file
+- The dashboard automatically detects accounts from these directories
+- Default account is set to "Work" (or first available)
 
 ---
 

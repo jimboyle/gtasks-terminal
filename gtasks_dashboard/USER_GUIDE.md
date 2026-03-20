@@ -15,13 +15,63 @@
 
 ## Getting Started
 
+### Prerequisites
+
+Before running the dashboard, ensure you have:
+
+1. **Python 3.8+** installed
+2. **GTasks CLI** installed (for remote sync)
+3. A **Google account** with Google Tasks enabled (optional)
+
+### Quick Start
+
+#### Option 1: Automated Setup (Recommended)
+```bash
+cd gtasks_dashboard
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+- Create a Python virtual environment
+- Install dependencies
+- Ask for your account name
+- Set up the account directory
+
+#### Option 2: Manual Setup
+
+```bash
+# 1. Create and activate virtual environment
+python3 -m venv gtasks-dashboard
+source gtasks-dashboard/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements-python.txt
+
+# 3. Install GTasks CLI (for remote sync)
+cd ../gtasks_cli
+pip install -e .
+
+# 4. Create account directory and sync
+mkdir -p ~/.gtasks/Work
+gtasks advanced-sync
+cp ~/.gtasks/tasks.db ~/.gtasks/Work/tasks.db
+
+# 5. Run the dashboard
+cd ../gtasks_dashboard
+python main_dashboard.py
+```
+
 ### Accessing the Dashboard
-1. **Start the Dashboard**: Run `python3 unified_dashboard_with_api.py`
-2. **Open Browser**: Navigate to `http://localhost:8087`
+
+1. **Start the Dashboard**: Run `python main_dashboard.py`
+2. **Open Browser**: Navigate to `http://localhost:8081`
 3. **Welcome Screen**: The dashboard will display an overview with all features
 
 ### First Time Setup
-- The dashboard automatically detects your GTasks accounts
+- The dashboard automatically detects your GTasks accounts from `~/.gtasks/`
+- Create a folder in `~/.gtasks/<account_name>/` for each account
+- Copy `tasks.db` to each account folder
 - Real-time data sync happens every 60 seconds
 - Settings are automatically saved
 
@@ -29,6 +79,20 @@
 - **Left Menu**: Navigate between different views
 - **Header**: Account selector, filters, and settings
 - **Main Content**: The active feature's interface
+
+### Remote Sync
+
+To sync with Google Tasks:
+
+```bash
+# Sync tasks from Google
+gtasks advanced-sync
+
+# Copy to your account folder
+cp ~/.gtasks/tasks.db ~/.gtasks/Work/tasks.db
+
+# Refresh dashboard in browser
+```
 
 ## Dashboard Overview
 
@@ -512,10 +576,13 @@ The home page provides:
 ### General Questions
 
 **Q: How do I start using the dashboard?**
-A: Simply run `python3 unified_dashboard_with_api.py` and open `http://localhost:8087` in your browser. The system automatically detects your GTasks accounts and loads data.
+A: Run `python main_dashboard.py` and open `http://localhost:8081` in your browser. The system automatically detects your GTasks accounts from `~/.gtasks/` directories.
 
 **Q: Do I need to install anything else?**
 A: Only the GTasks CLI if you want real data. The dashboard works with demo data if GTasks CLI isn't available.
+
+**Q: How do I set up multiple accounts?**
+A: Create a directory for each account in `~/.gtasks/` (e.g., `~/.gtasks/Work/`, `~/.gtasks/Personal/`), then copy `tasks.db` to each directory.
 
 **Q: How often does the data update?**
 A: Data updates automatically every 60 seconds, or you can refresh manually.

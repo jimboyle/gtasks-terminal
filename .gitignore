@@ -9,7 +9,6 @@ gtasks_cli/qdrant_storage/*
 gtasks_cli/src/gtasks_cli/__pycache__/*
 gtasks_dashboard/gtasks-dashboard/lib/*
 gtasks_dashboard/gtasks-dashboard/bin/*
-
 # ============================================
 # Remote Sync - Token & Database Security
 # ============================================
@@ -78,3 +77,4 @@ Thumbs.db
 #     files: '.*token|.*auth|.*credentials|.*turso|.*libsql'
 #     stages: [pre-commit]
 gtasks_dashboard/nginx.conf
+gtasks_dashboard/node_modules/*

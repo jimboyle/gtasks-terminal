@@ -314,6 +314,43 @@ def switch_account(account_id):
     return jsonify({'success': False, 'error': 'Account not found'}), 404
 
 
+@api.route('/accounts/create', methods=['POST'])
+def api_create_account():
+    """Create a new account (defaults to 'Personal' if no name provided)"""
+    data = request.get_json() or {}
+    account_name = data.get('name')  # None if not provided
+    
+    try:
+        # Use AccountManager to create the account
+        from modules.account_manager import AccountManager
+        account_manager = AccountManager()
+        
+        result = account_manager.create_account(account_name)
+        
+        if result.get('success'):
+            # Refresh dashboard cache to include new account
+            refresh_dashboard_cache()
+            
+            return jsonify({
+                'success': True,
+                'account': result.get('account'),
+                'message': f"Account '{account_name or 'Personal'}' created and set as current"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to create account')
+            }), 400
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error creating account: {str(e)}'
+        }), 500
+
+
 @api.route('/stats')
 def api_stats():
     """Get dashboard statistics"""

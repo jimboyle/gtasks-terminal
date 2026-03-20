@@ -175,6 +175,60 @@ EOF
     print_success "Environment setup complete"
 }
 
+# Function to set up GTasks account
+setup_gtasks_account() {
+    print_status "Setting up GTasks account..."
+    
+    # Check if ~/.gtasks exists
+    if [[ ! -d "$HOME/.gtasks" ]]; then
+        print_warning "GTasks CLI not found. Please install gtasks-cli first."
+        print_status "You can install it with: cd ../gtasks_cli && pip install -e ."
+        return 1
+    fi
+    
+    # Ask user for account name
+    echo ""
+    print_status "GTasks accounts are stored in ~/.gtasks/ directory"
+    echo "Existing accounts:"
+    ls -1 "$HOME/.gtasks/" 2>/dev/null | grep -v -E '\.(db|json|yaml|pickle)$' || echo "  (default)"
+    echo ""
+    
+    read -p "Enter account name to use (or press Enter for 'Work'): " ACCOUNT_NAME
+    ACCOUNT_NAME=${ACCOUNT_NAME:-Work}
+    
+    # Create account directory if it doesn't exist
+    ACCOUNT_DIR="$HOME/.gtasks/$ACCOUNT_NAME"
+    if [[ ! -d "$ACCOUNT_DIR" ]]; then
+        mkdir -p "$ACCOUNT_DIR"
+        print_success "Created account directory: $ACCOUNT_DIR"
+    else
+        print_status "Using existing account: $ACCOUNT_NAME"
+    fi
+    
+    # Check for tasks.db in the account directory or parent
+    if [[ -f "$ACCOUNT_DIR/tasks.db" ]]; then
+        print_success "Found tasks.db in account directory"
+    elif [[ -f "$HOME/.gtasks/tasks.db" ]]; then
+        # Copy main tasks.db to account directory
+        cp "$HOME/.gtasks/tasks.db" "$ACCOUNT_DIR/tasks.db"
+        print_success "Copied tasks to $ACCOUNT_NAME account"
+    else
+        print_warning "No tasks.db found. Run 'gtasks advanced-sync' to sync tasks."
+    fi
+    
+    # Save the default account for dashboard
+    echo "$ACCOUNT_NAME" > "$HOME/.gtasks/dashboard_account.txt"
+    print_success "Default account set to: $ACCOUNT_NAME"
+    
+    # Display next steps
+    echo ""
+    echo -e "${YELLOW}Next steps to sync with Google Tasks:${NC}"
+    echo "  1. gtasks advanced-sync   # Sync with Google Tasks"
+    echo "  2. cp ~/.gtasks/tasks.db ~/.gtasks/$ACCOUNT_NAME/tasks.db"
+    echo "  3. python main_dashboard.py"
+    echo ""
+}
+
 # Function to build the project
 build_project() {
     print_status "Building the project..."
@@ -300,6 +354,9 @@ main() {
     
     # Set up environment
     setup_environment
+    
+    # Set up GTasks account (ask user for account name)
+    setup_gtasks_account
     
     # Create startup scripts
     create_startup_scripts

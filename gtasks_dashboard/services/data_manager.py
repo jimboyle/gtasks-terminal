@@ -47,6 +47,12 @@ CATEGORIES = {
 class DataManager:
     """Manages data loading and task/account operations"""
     
+    # Folders to exclude from account detection (system/non-account folders)
+    EXCLUDED_FOLDERS = {
+        'logs', 'log', 'backup', 'backups', 'temp', 'tmp', 
+        'cache', '.cache', 'archives', 'old', 'shared'
+    }
+    
     def __init__(self, gtasks_path: Optional[Path] = None):
         self.gtasks_path = gtasks_path or self._detect_gtasks_path()
     
@@ -116,7 +122,8 @@ class DataManager:
         if self.gtasks_path and self.gtasks_path.exists():
             if self.gtasks_path.is_dir():
                 for item in self.gtasks_path.iterdir():
-                    if item.is_dir() and item.name != 'default':
+                    # Skip excluded folders, 'default', and non-account folders
+                    if item.is_dir() and item.name != 'default' and item.name.lower() not in self.EXCLUDED_FOLDERS:
                         accounts.append(Account(
                             id=item.name,
                             name=item.name.replace('_', ' ').title(),
@@ -719,7 +726,8 @@ class DataManager:
         if self.gtasks_path and self.gtasks_path.exists():
             if self.gtasks_path.is_dir():
                 for item in self.gtasks_path.iterdir():
-                    if item.is_dir() and item.name != 'default':
+                    # Skip excluded folders, 'default', and non-account folders
+                    if item.is_dir() and item.name != 'default' and item.name.lower() not in self.EXCLUDED_FOLDERS:
                         account_type = self._categorize_account_type(item.name)
                         accounts.append(Account(
                             id=item.name,

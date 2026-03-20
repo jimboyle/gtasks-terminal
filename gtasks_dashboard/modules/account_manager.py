@@ -23,6 +23,7 @@ class AccountManager:
     def __init__(self, gtasks_path=None):
         self.gtasks_home = Path.home() / '.gtasks'
         self.project_gtasks_path = Path('./gtasks_cli')
+        self.current_account = None  # Track currently selected account
         
         if gtasks_path:
             self.gtasks_path = Path(gtasks_path)
@@ -33,6 +34,12 @@ class AccountManager:
         else:
             self.gtasks_path = None
             print("⚠️  GTasks CLI not found. Using demo data.")
+        
+        # Folders to exclude from account detection (system/non-account folders)
+        self.excluded_folders = {
+            'logs', 'log', 'backup', 'backups', 'temp', 'tmp', 
+            'cache', '.cache', 'archives', 'old', 'shared'
+        }
         
         # Account type categorization patterns
         self.account_type_patterns = {
@@ -51,7 +58,8 @@ class AccountManager:
         if self.gtasks_path and self.gtasks_path.exists():
             if self.gtasks_path.is_dir():
                 for item in self.gtasks_path.iterdir():
-                    if item.is_dir() and item.name != 'default':
+                    # Skip excluded folders and 'default' (processed separately)
+                    if item.is_dir() and item.name.lower() not in self.excluded_folders and item.name != 'default':
                         account_info = self.get_account_info(item.name)
                         accounts.append(account_info)
             
@@ -61,7 +69,52 @@ class AccountManager:
         if not accounts:
             accounts.append(self._create_demo_account())
         
+        # Set first valid account as current if not set
+        if self.current_account is None and accounts:
+            valid_accounts = [a for a in accounts if a.get('hasDatabase', False) or a.get('type') != 'Testing']
+            if valid_accounts:
+                self.current_account = valid_accounts[0]['id']
+                # Mark it as active
+                for acc in accounts:
+                    acc['isActive'] = acc['id'] == self.current_account
+        
         return accounts
+    
+    def set_current_account(self, account_id):
+        """Set the current active account"""
+        self.current_account = account_id
+        return {'success': True, 'current_account': account_id}
+    
+    def create_account(self, account_name=None):
+        """Create a new account with default name 'Personal' if not provided"""
+        if not account_name:
+            account_name = 'Personal'
+        
+        # Sanitize account name (lowercase, no spaces)
+        account_id = account_name.lower().replace(' ', '_')
+        
+        if self.gtasks_path:
+            account_path = self.gtasks_path / account_id
+            if account_path.exists():
+                return {'success': False, 'error': f'Account "{account_name}" already exists'}
+            
+            # Create the account directory
+            account_path.mkdir(parents=True, exist_ok=False)
+            
+            # Set this as the current account
+            self.current_account = account_id
+            
+            return {
+                'success': True,
+                'account': {
+                    'id': account_id,
+                    'name': account_name,
+                    'type': 'Personal',  # Default to Personal
+                    'isActive': True
+                }
+            }
+        
+        return {'success': False, 'error': 'GTasks path not configured'}
     
     def _create_demo_account(self):
         """Create a demo account when no real accounts are found"""
