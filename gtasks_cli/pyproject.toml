@@ -43,7 +43,16 @@ dependencies = [
     "colorama>=0.4.6",
     "litellm>=1.42.0",
     "mcp>=1.0.0",
-    "libsql>=0.1.0,<0.2.0",
+]
+
+[project.optional-dependencies]
+remote = ["libsql>=0.1.0,<0.2.0"]
+dev = [
+    "pytest>=6.0",
+    "black",
+    "flake8",
+    "build",
+    "twine",
 ]
 
 [project.urls]
@@ -53,15 +62,6 @@ Homepage = "https://github.com/sirusdas/gtasks-terminal"
 
 [project.scripts]
 gtasks = "gtasks_cli.main:main"
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=6.0",
-    "black",
-    "flake8",
-    "build",
-    "twine",
-]
 
 [tool.hatch.version]
 path = "src/gtasks_cli/__init__.py"

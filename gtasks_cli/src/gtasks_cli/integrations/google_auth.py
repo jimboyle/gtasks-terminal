@@ -30,6 +30,7 @@ class GoogleAuthManager:
             account_name: Name of the account for multi-account support
         """
         self.account_name = account_name
+        root_gtasks_dir = os.path.join(os.path.expanduser("~"), ".gtasks")
         
         if account_name:
             # For multi-account support, use account-specific paths
@@ -37,13 +38,22 @@ class GoogleAuthManager:
             if config_dir_env:
                 config_dir = config_dir_env
             else:
-                config_dir = os.path.join(os.path.expanduser("~"), ".gtasks", account_name)
+                config_dir = os.path.join(root_gtasks_dir, account_name)
             
             # Ensure the directory exists
             os.makedirs(config_dir, exist_ok=True)
             
-            self.credentials_file = credentials_file or os.path.join(config_dir, "credentials.json")
-            self.token_file = token_file or os.path.join(config_dir, "token.pickle")
+            # Set account-specific paths
+            account_credentials = credentials_file or os.path.join(config_dir, "credentials.json")
+            account_token = token_file or os.path.join(config_dir, "token.pickle")
+            
+            # Fallback to root credentials if account-specific ones don't exist
+            self.credentials_file = account_credentials if os.path.exists(account_credentials) else os.path.join(root_gtasks_dir, "credentials.json")
+            self.token_file = account_token if os.path.exists(account_token) else os.path.join(root_gtasks_dir, "token.pickle")
+            
+            # Log if using fallback credentials
+            if self.credentials_file != account_credentials:
+                logger.info(f"Using fallback credentials from root directory: {self.credentials_file}")
         else:
             # Default behavior
             self.credentials_file = credentials_file or self._get_default_credentials_file()

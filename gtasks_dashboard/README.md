@@ -228,38 +228,77 @@ The refactored dashboard maintains full compatibility with:
 - **Performance**: Efficient data loading, background updates
 - **Reliability**: Error handling, graceful degradation
 
-## 🔄 Remote Sync with Google Tasks
+## 🔄 Remote Sync Features
 
-### Syncing Your Tasks
+The dashboard supports two types of sync:
 
-The dashboard reads tasks from your local `~/.gtasks/` database. To sync with Google Tasks:
+### 1. Google Tasks Sync (Local ↔ Google)
+
+Sync your tasks with Google Tasks API:
 
 ```bash
-# Activate the virtual environment (if not already activated)
-source gtasks-dashboard/bin/activate
-
-# Navigate to gtasks_cli
-cd ../gtasks_cli
-
-# Run advanced sync
+# Run advanced sync with Google
 gtasks advanced-sync
 
-# Copy synced tasks to your account directory
-cp ~/.gtasks/tasks.db ~/.gtasks/Work/tasks.db
+# Or use basic sync
+gtasks sync
 ```
 
-### Sync Workflow
+### 2. Turso Remote Sync (Local ↔ Cloud)
 
-1. **Initial Sync**: Run `gtasks advanced-sync` to pull tasks from Google
-2. **Update Dashboard**: Copy the synced database to your account folder
-3. **Refresh Dashboard**: Refresh your browser to see updated tasks
+Sync your tasks with a Turso cloud database for multi-device access:
 
-### Account Setup
+```bash
+# Quick setup (see full guide: ../REMOTE_SYNC_README.md)
+export GTASKS_TURSO_TOKEN="your-token"
+gtasks remote add "libsql://your-db.turso.io" "My Tasks"
+gtasks remote sync
+```
 
-- Accounts are stored as directories in `~/.gtasks/`
-- Each account directory should contain a `tasks.db` file
-- The dashboard automatically detects accounts from these directories
-- Default account is set to "Work" (or first available)
+### Dashboard Sync UI
+
+The dashboard includes visual sync indicators:
+
+| Feature | Description |
+|---------|-------------|
+| **Status Indicator** | Shows connected/disconnected status |
+| **Sync Button** | Manual trigger for remote sync |
+| **Last Sync Time** | Shows when data was last synced |
+| **DB Count** | Number of configured remote databases |
+
+### API Endpoints for Remote Sync
+
+```
+GET  /api/remote/status          - Get connection status
+GET  /api/remote/databases      - List configured databases
+POST /api/remote/sync           - Start sync operation
+POST /api/remote/push           - Push to remote
+POST /api/remote/pull           - Pull from remote
+```
+
+### Setup for Remote Sync
+
+1. **Create Turso Database**
+   ```bash
+   # Install Turso CLI
+   brew install tursodatabase/tap/turso
+   
+   # Create database
+   turso db create my-gtasks --region ap-south-1
+   ```
+
+2. **Configure Token**
+   ```bash
+   export GTASKS_TURSO_TOKEN="your-jwt-token"
+   ```
+
+3. **Add & Sync**
+   ```bash
+   gtasks remote add "libsql://my-db.turso.io" "My Tasks"
+   gtasks remote sync
+   ```
+
+For detailed setup instructions, see [REMOTE_SYNC_README.md](../REMOTE_SYNC_README.md).
 
 ---
 

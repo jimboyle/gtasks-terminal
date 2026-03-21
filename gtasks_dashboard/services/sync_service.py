@@ -96,9 +96,19 @@ class SyncService:
             if account:
                 account_name = account
             else:
-                # Check default from config like CLI does
-                config_manager = ConfigManager()
-                account_name = config_manager.get('default_account')
+                # Check GTASKS_DEFAULT_ACCOUNT environment variable first (session default)
+                import os
+                account_name = os.environ.get('GTASKS_DEFAULT_ACCOUNT')
+                if account_name:
+                    print(f"[SyncService] Using session default account: {account_name}")
+                else:
+                    # Check default from config like CLI does
+                    config_manager = ConfigManager()
+                    account_name = config_manager.get('default_account')
+                    if not account_name:
+                        # Fallback to 'Work' account if no default set
+                        account_name = 'Work'
+                        print(f"[SyncService] No default account in config, using: {account_name}")
             
             # Load configuration to get sync settings - exactly like CLI
             config_manager = ConfigManager(account_name=account_name)

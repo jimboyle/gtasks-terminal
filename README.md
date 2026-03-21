@@ -22,6 +22,7 @@ Google Tasks CLI provides a comprehensive set of features for power users who pr
 8. **Advanced Sync**: Enhanced synchronization with tag processing and conflict resolution
 9. **Task Recovery**: Backup and restore functionality for deleted tasks
 10. **External Editor Integration**: Edit tasks using your preferred text editor
+11. **Remote Sync**: Sync tasks with Turso cloud database for multi-device access
 
 ## 📦 Installation
 
@@ -58,7 +59,24 @@ curl -fsSL https://raw.githubusercontent.com/sirusdas/gtasks-terminal/02689d4840
 
 ---
 
-### **The Manual Way**
+### **Using pipx (Recommended for macOS/Homebrew)**
+
+If you're on macOS with Homebrew, pipx is the recommended way to install CLI applications:
+
+```bash
+# Install pipx if you don't have it
+brew install pipx
+pipx ensurepath
+
+# Install gtasks-cli
+pipx install gtasks-cli
+
+# For development (from local repo)
+cd ~/path/to/gtasks-terminal/gtasks_cli
+pipx install -e . --force
+```
+
+### **Using pip**
 
 Install directly from PyPI:
 
@@ -66,7 +84,7 @@ Install directly from PyPI:
 pip install gtasks-cli
 ```
 
-This is the easiest and recommended way to install Google Tasks CLI. The latest version is 0.1.6.
+> **Note:** If you get an error about "externally managed environment", use `pipx` instead (see above) or create a virtual environment.
 
 After installation, we recommend running the setup assistant to configure your environment:
 
@@ -284,6 +302,44 @@ The `gtasks advanced-sync` command provides enhanced synchronization capabilitie
 - Tag processing from task content
 - Duplicate detection and handling
 - Incremental sync for better performance
+
+## ☁️ Remote Sync (Multi-Device Access)
+
+Sync your tasks with a Turso cloud database to access them from any device!
+
+### Quick Setup
+
+```bash
+# 1. Install Turso CLI
+brew install tursodatabase/tap/turso
+
+# 2. Login and create a database
+turso auth login
+turso db create my-gtasks --location aws-ap-south-1
+
+# 3. Get token and URL
+turso db tokens create my-gtasks
+turso db show my-gtasks
+
+# 4. Set your token
+export GTASKS_TURSO_TOKEN="your-jwt-token"
+
+# 5. Add & sync
+gtasks remote add "libsql://my-gtasks-xxxxx.turso.io" "your-jwt-token" --name "My Tasks"
+gtasks remote sync
+```
+
+### Remote Sync Commands
+
+```bash
+gtasks remote list          # List configured databases
+gtasks remote sync         # Full sync with all remotes
+gtasks remote push         # Push local → remote
+gtasks remote pull         # Pull remote → local
+gtasks remote remove <url> # Remove a remote database
+```
+
+For complete setup guide, see [REMOTE_SYNC_README.md](REMOTE_SYNC_README.md).
 
 ## 🤖 AI & MCP Integration
 
