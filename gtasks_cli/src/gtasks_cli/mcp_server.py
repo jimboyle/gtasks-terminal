@@ -9,9 +9,9 @@ from gtasks_cli.ai.tools import GTasksTools
 mcp = FastMCP("gtasks")
 
 def get_tools():
-    # Initialize with defaults (local storage, default account)
-    # We use sqlite backend by default for MCP
-    tm = TaskManager(storage_backend='sqlite')
+    # Initialize with Work account (matches gtasks CLI default account)
+    # Must specify account_name='Work' so MCP and CLI share the same SQLite DB
+    tm = TaskManager(storage_backend='sqlite', account_name='Work', use_google_tasks=True)
     return GTasksTools(tm)
 
 @mcp.tool()

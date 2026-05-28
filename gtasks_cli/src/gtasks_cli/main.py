@@ -87,7 +87,7 @@ cli.add_command(account)
 cli.add_command(generate_report)
 cli.add_command(config)
 # cli.add_command(ai)
-# cli.add_command(mcp)
+cli.add_command(mcp)
 cli.add_command(tasklist)
 cli.add_command(remote_commands)
 
