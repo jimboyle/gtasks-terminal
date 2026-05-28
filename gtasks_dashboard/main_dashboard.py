@@ -160,11 +160,14 @@ def api_hierarchy_filtered_local():
     from routes.api import api_hierarchy_filtered
     return api_hierarchy_filtered()
 
-@app.route(f'{BASE_PATH}/api/tasks/<task_id>')
-def get_task_local(task_id):
-    """Get a specific task"""
-    from routes.api import get_task
+@app.route(f'{BASE_PATH}/api/tasks/<task_id>', methods=['GET', 'PUT'])
+def get_or_update_task(task_id):
+    """Get or update a specific task"""
+    from routes.api import get_task, update_task
+    if request.method == 'PUT':
+        return update_task(task_id)
     return get_task(task_id)
+
 
 @app.route(f'{BASE_PATH}/api/health')
 def api_health_local():
@@ -286,6 +289,14 @@ def api_tasks_root():
     """Get tasks with optional filters (local development)"""
     from routes.api import api_tasks
     return api_tasks()
+
+@app.route('/api/tasks/<task_id>', methods=['GET', 'PUT'])
+def api_get_or_update_task_root(task_id):
+    """Get or update a specific task (local development)"""
+    from routes.api import get_task, update_task
+    if request.method == 'PUT':
+        return update_task(task_id)
+    return get_task(task_id)
 
 @app.route('/api/accounts')
 def api_accounts_root():

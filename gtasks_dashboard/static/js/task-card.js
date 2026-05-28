@@ -52,10 +52,17 @@ export function createTaskCard(task, options = {}) {
     // Complete button - show checkmark for incomplete, completed for complete
     const isCompleted = task.status === 'completed';
     const completeBtnHtml = `
-        <div class="task-complete-btn ${isCompleted ? 'completed' : ''}" 
+        <div class="task-complete-btn ${isCompleted ? 'completed' : ''}"
              onclick="${isCompleted ? '' : `completeTask('${task.id}')`}"
              title="${isCompleted ? 'Completed' : 'Mark as complete'}">
             ${isCompleted ? '✅' : '⭕'}
+        </div>
+    `;
+
+    // Edit button
+    const editBtnHtml = `
+        <div class="task-edit-btn" onclick="openEditModal('${task.id}')" title="Edit task">
+            <i class="fas fa-edit"></i>
         </div>
     `;
     
@@ -85,7 +92,10 @@ export function createTaskCard(task, options = {}) {
     } else {
         // Main task card HTML
         card.innerHTML = `
-            ${completeBtnHtml}
+            <div class="task-card-actions">
+                ${completeBtnHtml}
+                ${editBtnHtml}
+            </div>
             <div class="task-card-header">
                 <span class="task-priority-badge ${priorityClass}">${priorityIcon} ${task.calculated_priority || task.priority}</span>
                 <span class="task-status-badge ${statusClass}">${task.status}</span>
