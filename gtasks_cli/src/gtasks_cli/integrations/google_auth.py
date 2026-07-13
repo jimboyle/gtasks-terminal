@@ -24,6 +24,7 @@ class GoogleAuthManager:
             token_file: Path to the token.pickle file
         """
         self.account_name = account_name
+        self.credentials = None
         
         # Determine config dir for the account
         config_dir_env = os.environ.get('GTASKS_CONFIG_DIR')
@@ -151,7 +152,8 @@ class GoogleAuthManager:
                 logger.debug(f"Saved credentials to {self.token_file}")
             except Exception as e:
                 logger.warning(f"Failed to save token file: {e}")
-                
+        
+        self.credentials = creds
         return creds
 
     def logout(self) -> bool:
@@ -172,3 +174,22 @@ class GoogleAuthManager:
         
         logger.info("No stored credentials found")
         return True
+
+    def get_service(self):
+        """
+        Get the Google Tasks API service object.
+        
+        Returns:
+            googleapiclient.discovery.Resource: The Google Tasks API service
+        """
+        if not self.credentials:
+            if not self.authenticate():
+                return None
+        
+        try:
+            service = build('tasks', 'v1', credentials=self.credentials)
+            logger.debug("Google Tasks API service created")
+            return service
+        except Exception as e:
+            logger.error(f"Failed to create Google Tasks API service: {e}")
+            return None
