@@ -120,8 +120,8 @@ class SQLiteStorage:
                 cursor = conn.cursor()
                 
                 for task in tasks:
-                    # Log the task being saved
-                    logger.debug(f"Saving task: {task.get('id')} - {task.get('title')} - {task.get('status')}")
+                    # Log the task being saved (commented out to reduce noise)
+                    # logger.debug(f"Saving task: {task.get('id')} - {task.get('title')} - {task.get('status')}")
                     
                     # Serialize lists to JSON strings
                     tags_json = json.dumps(task.get('tags', []))
