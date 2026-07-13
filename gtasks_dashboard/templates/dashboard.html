@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="{{ base_path }}/static/css/hierarchy-filter.css">
     <link rel="stylesheet" href="{{ base_path }}/static/css/hierarchy-ledger.css">
     <link rel="stylesheet" href="{{ base_path }}/static/css/multiselect.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -474,6 +475,60 @@
         </div>
     </div>
 
+    <!-- Edit Task Modal -->
+    <div class="modal-overlay" id="edit-task-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Task</h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="edit-modal-body">
+                <div class="edit-form-group">
+                    <label>Title</label>
+                    <input type="text" id="edit-task-title" class="filter-input" placeholder="Task title">
+                </div>
+                <div class="edit-form-row">
+                    <div class="edit-form-group">
+                        <label>Priority</label>
+                        <select id="edit-task-priority" class="filter-select">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Status</label>
+                        <select id="edit-task-status" class="filter-select">
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>List</label>
+                        <select id="edit-task-list" class="filter-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <div class="edit-form-group">
+                    <label>Notes <span class="markdown-hint">— Markdown supported</span></label>
+                    <div class="edit-notes-tabs">
+                        <button class="edit-notes-tab active" data-tab="edit" onclick="switchNotesTab('edit')">Edit</button>
+                        <button class="edit-notes-tab" data-tab="preview" onclick="switchNotesTab('preview')">Preview</button>
+                    </div>
+                    <textarea id="edit-task-notes" class="filter-input" rows="8" placeholder="Notes (Markdown supported: **bold**, *italic*, # heading, - list, `code`)"></textarea>
+                    <div id="edit-notes-preview" class="notes-preview-box" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary-modal" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-primary-modal" onclick="saveTaskEdit()"><i class="fas fa-save"></i> Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loading-overlay" style="display: none;">
         <div class="loading-spinner"></div>
@@ -481,6 +536,6 @@
     </div>
 
     <script type="module" src="{{ base_path }}/static/js/hierarchy.js"></script>
-    <script type="module" src="{{ base_path }}/static/js/dashboard.js?v=4"></script>
+    <script type="module" src="{{ base_path }}/static/js/dashboard.js?v=5"></script>
 </body>
 </html>

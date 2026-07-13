@@ -898,6 +898,29 @@ class AdvancedSyncManager:
             created_tasks = []
             for task in sync_plan['create_remote']:
                 try:
+                    # Determine which tasklist to push to
+                    # 1. Use the task's tasklist_id if it maps to a real Google list ID
+                    # 2. Fall back to self._default_tasklist_id (usually "My Tasks" / @default)
+                    target_tasklist_id = None
+                    if hasattr(task, 'tasklist_id') and task.tasklist_id:
+                        tid = task.tasklist_id
+                        # Normalize 'default' -> '@default'
+                        if tid == 'default':
+                            tid = '@default'
+                        # Check if it's already a Google list ID (not 'default' or '@default')
+                        if tid not in ('@default', 'default'):
+                            target_tasklist_id = tid
+                        else:
+                            # It's 'default' or '@default' — use default
+                            target_tasklist_id = self.google_client._default_tasklist_id
+                    
+                    if not target_tasklist_id:
+                        target_tasklist_id = self.google_client._default_tasklist_id
+                    
+                    # Override task.tasklist_id for this push operation
+                    original_tasklist_id = task.tasklist_id
+                    task.tasklist_id = target_tasklist_id
+                    
                     # Create task in Google Tasks, passing Google signatures to prevent additional API calls
                     new_task = self.google_client.create_task(task, self._google_signatures)
                     if new_task:

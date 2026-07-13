@@ -311,3 +311,32 @@
 .dark-mode #task-clear-filters:hover i {
     color: white !important;
 }
+
+
+/* Edit modal dark mode fixes */
+.dark-mode .task-edit-btn:hover {
+    color: #60a5fa;
+}
+
+.dark-mode .task-card-actions {
+    border-bottom-color: var(--border-color);
+}
+
+.dark-mode .notes-preview-box {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.dark-mode .notes-preview-box h1,
+.dark-mode .notes-preview-box h2,
+.dark-mode .notes-preview-box h3 {
+    color: #f1f5f9;
+}
+
+.dark-mode .notes-preview-box code {
+    background: #0f172a;
+}
+
+.dark-mode .notes-preview-box pre {
+    background: #0f172a;
+}

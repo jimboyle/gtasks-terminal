@@ -50,6 +50,7 @@ export function getDashboardData() {
 export function setDashboardData(data) {
     dashboardData = data;
     window.dashboardData = data;  // Also set on window for other modules to access
+    window.allGoogleLists = data.all_google_lists || [];
     stateManager.setDashboardData(data);
 }
 
@@ -1588,6 +1589,126 @@ window.setupRefreshDropdown = setupRefreshDropdown;
 window.getListsWithCounts = getListsWithCounts;
 window.getTagsWithCounts = getTagsWithCounts;
 window.updateFilteredMultiselect = updateFilteredMultiselect;
+
+// Edit Modal Functions
+window.openEditModal = openEditModal;
+window.closeEditModal = closeEditModal;
+window.saveTaskEdit = saveTaskEdit;
+window.switchNotesTab = switchNotesTab;
+
+function openEditModal(taskId) {
+    const tasks = (typeof dashboardData !== 'undefined' && dashboardData.tasks) ? dashboardData.tasks : [];
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    window.editingTaskId = taskId;
+
+    document.getElementById('edit-task-title').value = task.title || '';
+    document.getElementById('edit-task-priority').value = task.calculated_priority || task.priority || 'medium';
+    document.getElementById('edit-task-status').value = task.status || 'pending';
+    document.getElementById('edit-task-notes').value = task.notes || '';
+
+    // Populate list dropdown with all available lists
+    const listSelect = document.getElementById('edit-task-list');
+    listSelect.innerHTML = '';
+    const allLists = (window.allGoogleLists || []);
+    allLists.forEach(list => {
+        const opt = document.createElement('option');
+        opt.value = list.title;
+        opt.textContent = list.title;
+        if (list.title === task.list_title) opt.selected = true;
+        listSelect.appendChild(opt);
+    });
+
+    // Reset to edit tab
+    switchNotesTab('edit');
+
+    document.getElementById('edit-task-modal').classList.add('active');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-task-modal').classList.remove('active');
+    window.editingTaskId = null;
+}
+
+async function saveTaskEdit() {
+    const taskId = window.editingTaskId;
+    if (!taskId) return;
+
+    const payload = {
+        title: document.getElementById('edit-task-title').value,
+        priority: document.getElementById('edit-task-priority').value,
+        status: document.getElementById('edit-task-status').value,
+        notes: document.getElementById('edit-task-notes').value,
+        list_title: document.getElementById('edit-task-list').value
+    };
+
+    try {
+        const basePath = window.GTASKS_BASE_PATH || '';
+        const apiPath = `${basePath}/api/tasks/${taskId}`;
+        const response = await fetch(apiPath, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.status === 405) {
+            // BASE_PATH not recognized (server running without subpath), try root-level API
+            const fallbackPath = `/api/tasks/${taskId}`;
+            const fallbackResponse = await fetch(fallbackPath, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await fallbackResponse.json();
+            if (data.success) {
+                showNotification('Task updated ✅', 'success');
+                closeEditModal();
+                if (typeof window.loadTasks === 'function') {
+                    window.loadTasks(window.currentAccountId);
+                }
+                return;
+            } else {
+                showNotification('Failed to update task', 'error');
+                return;
+            }
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            showNotification('Task updated ✅', 'success');
+            closeEditModal();
+            if (typeof window.loadTasks === 'function') {
+                window.loadTasks(window.currentAccountId);
+            }
+        } else {
+            showNotification('Failed to update task', 'error');
+        }
+    } catch (error) {
+        showNotification('Error updating task', 'error');
+    }
+}
+
+function switchNotesTab(tab) {
+    const tabs = document.querySelectorAll('.edit-notes-tab');
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+
+    const textarea = document.getElementById('edit-task-notes');
+    const preview = document.getElementById('edit-notes-preview');
+
+    if (tab === 'preview') {
+        textarea.style.display = 'none';
+        preview.style.display = 'block';
+        if (typeof marked !== 'undefined') {
+            preview.innerHTML = marked.parse(textarea.value || '');
+        } else {
+            preview.textContent = textarea.value;
+        }
+    } else {
+        textarea.style.display = 'block';
+        preview.style.display = 'none';
+    }
+}
 
 // Export for use in other modules
 export default {

@@ -77,6 +77,14 @@ kill <PID>
 # Force kill if needed
 pkill -9 -f "gunicorn.*main_dashboard:app"
 
+# Mannual run
+cd gtasks_dashboard
+nohup python main_dashboard.py > /dev/null 2>&1 &
+
+lsof -i :8081
+pkill -f "main_dashboard.py"
+kill -9 57625
+
 
 # Ngnix 
 # Test the configuration

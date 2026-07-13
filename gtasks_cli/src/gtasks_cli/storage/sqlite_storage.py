@@ -215,8 +215,9 @@ class SQLiteStorage:
                         'notes': row[8],
                         'dependencies': dependencies,
                         'recurrence_rule': row[10],
-                        'created_at': row[11],
-                        'modified_at': row[12],
+                        # Convert SQLite datetime strings to datetime objects for Pydantic
+                        'created_at': datetime.fromisoformat(row[11]) if row[11] and isinstance(row[11], str) else (row[11] or datetime.utcnow()),
+                        'modified_at': datetime.fromisoformat(row[12]) if row[12] and isinstance(row[12], str) else (row[12] or datetime.utcnow()),
                         'completed_at': row[13],
                         'estimated_duration': row[14],
                         'actual_duration': row[15],

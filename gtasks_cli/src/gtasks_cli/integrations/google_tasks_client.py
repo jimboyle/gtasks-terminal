@@ -141,6 +141,9 @@ class GoogleTasksClient:
             The title of the tasklist or None if not found
         """
         try:
+            # Normalize 'default' -> '@default' for Google Tasks API
+            if tasklist_id == 'default':
+                tasklist_id = '@default'
             tasklist = self.service.tasklists().get(tasklist=tasklist_id).execute()
             return tasklist.get('title')
         except Exception as e:
@@ -191,11 +194,10 @@ class GoogleTasksClient:
             # Check if task already exists to prevent duplicates
             logger.debug(f"Checking for duplicate task: title='{title}', description='{full_description}', due='{formatted_due}', status='pending'")
             
-            # Create a signature for this task
+            # Create a signature for this task (due_date not part of signature func)
             task_signature = create_task_signature(
                 title=title,
                 description=full_description or "",
-                due_date=formatted_due or "",
                 status="pending"
             )
             
@@ -246,6 +248,9 @@ class GoogleTasksClient:
             tasklist_id = getattr(task, 'tasklist_id', '@default')
             if not tasklist_id:
                 tasklist_id = '@default'
+            # Normalize 'default' -> '@default' for Google Tasks API
+            if tasklist_id == 'default':
+                tasklist_id = '@default'
             
             logger.debug(f"Creating task in tasklist: {tasklist_id}")
             
@@ -288,6 +293,8 @@ class GoogleTasksClient:
                 return []
         
         tasklist_id = tasklist_id or self._default_tasklist_id or "@default"
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             # Build parameters for the request
@@ -354,6 +361,8 @@ class GoogleTasksClient:
                 return []
         
         tasklist_id = tasklist_id or self._default_tasklist_id or "@default"
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             # Build parameters for the request
@@ -429,6 +438,8 @@ class GoogleTasksClient:
                 return []
         
         tasklist_id = tasklist_id or self._default_tasklist_id or "@default"
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             # Build parameters for the request with all filters
@@ -491,6 +502,8 @@ class GoogleTasksClient:
                 return None
         
         tasklist_id = tasklist_id or self._default_tasklist_id or "@default"
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             task_result = self.service.tasks().get(
@@ -521,6 +534,9 @@ class GoogleTasksClient:
                 return None
         
         tasklist_id = tasklist_id or task.tasklist_id or self._default_tasklist_id or "@default"
+        # Normalize 'default' -> '@default' for Google Tasks API
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             # Convert local task to Google Tasks format
@@ -561,6 +577,8 @@ class GoogleTasksClient:
                 return False
         
         tasklist_id = tasklist_id or self._default_tasklist_id or "@default"
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             self.service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
@@ -589,6 +607,8 @@ class GoogleTasksClient:
                 return False
         
         tasklist_id = tasklist_id or self._default_tasklist_id or "@default"
+        if tasklist_id == 'default':
+            tasklist_id = '@default'
         
         try:
             # Get the task first
