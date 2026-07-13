@@ -15,7 +15,7 @@ class GoogleAuthManager:
     # If modifying these scopes, delete the file token.pickle.
     SCOPES = ['https://www.googleapis.com/auth/tasks']
     
-    def __init__(self, credentials_file: str = None, token_file: str = None):
+    def __init__(self, credentials_file: str = None, token_file: str = None, account_name: str = None):
         """
         Initialize the auth manager.
         
@@ -23,14 +23,17 @@ class GoogleAuthManager:
             credentials_file: Path to the credentials.json file
             token_file: Path to the token.pickle file
         """
-        self.account_name = None
+        self.account_name = account_name
         
         # Determine config dir for the account
         config_dir_env = os.environ.get('GTASKS_CONFIG_DIR')
         if config_dir_env:
             config_dir = config_dir_env
         else:
-            config_dir = os.path.join(os.path.expanduser("~"), ".gtasks")
+            if account_name:
+                config_dir = os.path.join(os.path.expanduser("~"), ".gtasks", account_name)
+            else:
+                config_dir = os.path.join(os.path.expanduser("~"), ".gtasks")
             
         def find_creds(directory):
             c = os.path.join(directory, "credentials.json")

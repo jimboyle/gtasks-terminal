@@ -179,8 +179,20 @@ def refresh_dashboard_cache():
     print('[Cache] Refreshing dashboard cache...')
     _dashboard_state['accounts'] = data_manager.detect_accounts()
     
-    # Set first account as active
-    if _dashboard_state['accounts']:
+    # Try to read current account from CLI state
+    import os
+    from pathlib import Path
+    try:
+        current_account_file = Path.home() / '.gtasks' / '.current_account'
+        if current_account_file.exists():
+            cli_account = current_account_file.read_text().strip()
+            if any(a.id == cli_account for a in _dashboard_state['accounts']):
+                _dashboard_state['current_account'] = cli_account
+    except Exception as e:
+        print(f"Failed to read CLI current account: {e}")
+        
+    # Fallback to first account if not set
+    if not _dashboard_state.get('current_account') and _dashboard_state['accounts']:
         _dashboard_state['current_account'] = _dashboard_state['accounts'][0].id
     
     # Load tasks for each account
@@ -305,6 +317,15 @@ def switch_account(account_id):
         if account_id not in _dashboard_state['tasks']:
             tasks = data_manager.load_tasks_for_account(account_id)
             _dashboard_state['tasks'][account_id] = [t.to_dict() for t in tasks]
+            
+        # Synchronize with CLI state
+        import os
+        from pathlib import Path
+        try:
+            current_account_file = Path.home() / '.gtasks' / '.current_account'
+            current_account_file.write_text(account_id)
+        except Exception as e:
+            print(f"Failed to write current account to CLI file: {e}")
         
         return jsonify({
             'success': True,

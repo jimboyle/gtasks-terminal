@@ -493,7 +493,7 @@ def list(ctx, list_filter, status, priority, project, recurring, time_filter, se
     storage_backend = ctx.obj.get('storage_backend', 'json')
     
     # Determine the account to use
-    account_name = account or ctx.obj.get('account')
+    account_name = account or ctx.obj.get('account_name')
     
     logger.info(f"Listing tasks {'(Google Tasks)' if use_google_tasks else '(Local)'} for account: {account_name or 'default'}")
     
