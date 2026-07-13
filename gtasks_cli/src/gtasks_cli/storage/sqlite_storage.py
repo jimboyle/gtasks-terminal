@@ -59,8 +59,9 @@ class SQLiteStorage:
     def _init_db(self) -> None:
         """Initialize the database with required tables."""
         try:
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 
                 # Create tasks table
                 cursor.execute('''
@@ -116,8 +117,9 @@ class SQLiteStorage:
         """
         try:
             logger.debug(f"Saving {len(tasks)} tasks to database")
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 
                 for task in tasks:
                     # Log the task being saved (commented out to reduce noise)
@@ -177,8 +179,9 @@ class SQLiteStorage:
             List of task dictionaries
         """
         try:
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 
                 cursor.execute('''
                     SELECT 
@@ -244,8 +247,9 @@ class SQLiteStorage:
             Dictionary mapping task IDs to list names
         """
         try:
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 cursor.execute('SELECT task_id, list_name FROM task_lists')
                 mappings = {row[0]: row[1] for row in cursor.fetchall()}
                 logger.debug(f"Loaded {len(mappings)} list mappings from database")
@@ -262,8 +266,9 @@ class SQLiteStorage:
             mapping: Dictionary mapping task IDs to list names
         """
         try:
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 
                 for task_id, list_name in mapping.items():
                     cursor.execute('''
@@ -280,8 +285,9 @@ class SQLiteStorage:
     def clear_tasks(self) -> None:
         """Clear all tasks from the database."""
         try:
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 cursor.execute('DELETE FROM tasks')
                 cursor.execute('DELETE FROM task_lists')
                 conn.commit()
@@ -301,8 +307,9 @@ class SQLiteStorage:
             bool: True if successful, False otherwise
         """
         try:
-            with sqlite3.connect(self.storage_path) as conn:
+            with sqlite3.connect(self.storage_path, timeout=30.0) as conn:
                 cursor = conn.cursor()
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 cursor.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
                 # Cascade delete should handle task_lists, but let's be safe
                 cursor.execute('DELETE FROM task_lists WHERE task_id = ?', (task_id,))
