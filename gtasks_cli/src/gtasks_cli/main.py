@@ -48,8 +48,16 @@ def cli(ctx, google, storage, account, auto_save):
         # Explicitly specified account
         account_name = account
     else:
-        # Check for session default
+        # Check for session default (environment variable)
         account_name = os.environ.get('GTASKS_DEFAULT_ACCOUNT')
+        
+        # Check for current account file (session equivalent)
+        if not account_name:
+            current_account_file = os.path.join(os.path.expanduser("~"), ".gtasks", ".current_account")
+            if os.path.exists(current_account_file):
+                with open(current_account_file, 'r') as f:
+                    account_name = f.read().strip()
+
         if not account_name:
             # Check for global default
             from gtasks_cli.storage.config_manager import ConfigManager

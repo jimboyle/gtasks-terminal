@@ -39,7 +39,22 @@ class GoogleTasksClient:
             os.makedirs(config_dir, exist_ok=True)
             
             if credentials_file is None:
-                credentials_file = os.path.join(config_dir, "credentials.json")
+                def find_creds(directory):
+                    c = os.path.join(directory, "credentials.json")
+                    if os.path.exists(c):
+                        return c
+                    for f in os.listdir(directory):
+                        if f.startswith("client_secret") and f.endswith(".json"):
+                            return os.path.join(directory, f)
+                    return None
+                    
+                found_creds = find_creds(config_dir)
+                if not found_creds:
+                    global_dir = os.path.join(os.path.expanduser("~"), ".gtasks")
+                    if os.path.exists(global_dir):
+                        found_creds = find_creds(global_dir)
+                
+                credentials_file = found_creds or os.path.join(config_dir, "credentials.json")
             if token_file is None:
                 token_file = os.path.join(config_dir, "token.pickle")
         else:

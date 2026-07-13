@@ -39,10 +39,22 @@ class GoogleAuthManager:
             else:
                 config_dir = os.path.join(os.path.expanduser("~"), ".gtasks", account_name)
             
-            # Ensure the directory exists
-            os.makedirs(config_dir, exist_ok=True)
+            def find_creds(directory):
+                c = os.path.join(directory, "credentials.json")
+                if os.path.exists(c):
+                    return c
+                for f in os.listdir(directory):
+                    if f.startswith("client_secret") and f.endswith(".json"):
+                        return os.path.join(directory, f)
+                return None
             
-            self.credentials_file = credentials_file or os.path.join(config_dir, "credentials.json")
+            found_creds = find_creds(config_dir)
+            if not found_creds:
+                global_dir = os.path.join(os.path.expanduser("~"), ".gtasks")
+                if os.path.exists(global_dir):
+                    found_creds = find_creds(global_dir)
+                    
+            self.credentials_file = credentials_file or found_creds or os.path.join(config_dir, "credentials.json")
             self.token_file = token_file or os.path.join(config_dir, "token.pickle")
         else:
             # Default behavior
@@ -62,8 +74,16 @@ class GoogleAuthManager:
             
         # Ensure the directory exists
         os.makedirs(config_dir, exist_ok=True)
-        credentials_file = os.path.join(config_dir, "credentials.json")
-        return credentials_file
+        
+        c = os.path.join(config_dir, "credentials.json")
+        if os.path.exists(c):
+            return c
+            
+        for f in os.listdir(config_dir):
+            if f.startswith("client_secret") and f.endswith(".json"):
+                return os.path.join(config_dir, f)
+                
+        return c
     
     def _get_default_token_file(self) -> str:
         """Get the default token file path."""

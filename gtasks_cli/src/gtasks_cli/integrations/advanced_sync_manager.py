@@ -38,11 +38,22 @@ class AdvancedSyncManager:
         self.local_storage = storage
         self.google_client = google_client
         self.pull_range_days = pull_range_days
+        # Determine config dir for the account
+        config_dir_env = os.environ.get('GTASKS_CONFIG_DIR')
+        if config_dir_env:
+            config_dir = config_dir_env
+        else:
+            account_name = getattr(self.google_client, 'account_name', None)
+            if account_name:
+                config_dir = os.path.join(os.path.expanduser("~"), ".gtasks", account_name)
+            else:
+                config_dir = os.path.join(os.path.expanduser("~"), ".gtasks")
+                
         self.sync_metadata_file = os.path.join(
-            os.path.expanduser("~"), ".gtasks", "advanced_sync_metadata.json"
+            config_dir, "advanced_sync_metadata.json"
         )
         self.deletion_log_file = os.path.join(
-            os.path.expanduser("~"), ".gtasks", "deletion_log.json"
+            config_dir, "deletion_log.json"
         )
         self.sync_metadata = self._load_sync_metadata()
     
@@ -179,6 +190,11 @@ class AdvancedSyncManager:
             if not self.google_client.connect():
                 logger.error("Failed to connect to Google Tasks")
                 return False
+                
+            # Check if this is a first-time sync
+            if not self.sync_metadata.get("last_sync") and self.pull_range_days is not None:
+                logger.info("First time sync detected for this account, enforcing full sync")
+                self.pull_range_days = None
             
             # Step 1: Pull all remote records once and save to memory
             logger.info("Step 1: Loading all Google Tasks into memory")
