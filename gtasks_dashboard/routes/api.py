@@ -816,6 +816,10 @@ def api_advanced_sync():
         sync_type = data.get('sync_type', 'both')
         account = data.get('account')
         
+        if not account:
+            account = _dashboard_state.get('current_account')
+            
+
         # Validate sync_type
         if sync_type not in ('push', 'pull', 'both'):
             return jsonify({

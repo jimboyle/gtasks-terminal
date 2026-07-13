@@ -166,7 +166,7 @@ class DataManager:
             try:
                 conn = sqlite3.connect(str(db_path), timeout=30.0)
                 cursor = conn.cursor()
-            cursor.execute('PRAGMA journal_mode=WAL;')
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 
                 # Check if list_title column exists
                 cursor.execute("PRAGMA table_info(tasks)")
@@ -205,7 +205,7 @@ class DataManager:
             try:
                 conn = sqlite3.connect(str(db_path), timeout=30.0)
                 cursor = conn.cursor()
-            cursor.execute('PRAGMA journal_mode=WAL;')
+                cursor.execute('PRAGMA journal_mode=WAL;')
                 
                 # Load task_lists to get list titles
                 cursor.execute("SELECT task_id, list_name FROM task_lists")
@@ -231,7 +231,7 @@ class DataManager:
                 try:
                     conn = sqlite3.connect(str(db_path), timeout=30.0)
                     cursor = conn.cursor()
-            cursor.execute('PRAGMA journal_mode=WAL;')
+                    cursor.execute('PRAGMA journal_mode=WAL;')
                     cursor.execute("PRAGMA table_info(tasks)")
                     columns = [col[1] for col in cursor.fetchall()]
                     conn.close()
