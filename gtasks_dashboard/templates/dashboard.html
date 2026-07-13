@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script>
+        // Global base path for subpath deployment
+        window.GTASKS_BASE_PATH = '{{ base_path }}';
+    </script>
+    <title>GTasks Dashboard - Hierarchical Visualization</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dashboard.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/dark-mode.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/components.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/modal.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/hierarchy-filter.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/hierarchy-ledger.css">
+    <link rel="stylesheet" href="{{ base_path }}/static/css/multiselect.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 id="sidebar-title">GTasks</h2>
+                <button class="menu-toggle" onclick="toggleSidebar()" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ base_path }}/dashboard" class="nav-item" id="nav-dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ base_path }}/hierarchy" class="nav-item" id="nav-hierarchy">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Hierarchy</span>
+                </a>
+                <a href="{{ base_path }}/tasks" class="nav-item" id="nav-tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="section">
+                <div class="header">
+                    <h1><i class="fas fa-tasks mr-2"></i>GTasks Dashboard</h1>
+                    <div class="header-actions">
+                        <div id="darkModeToggle" class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                            <i class="fas fa-sun sun-icon"></i>
+                            <i class="fas fa-moon moon-icon"></i>
+                            <span class="mode-text"><span class="sun-icon">Light</span><span class="moon-icon">Dark</span></span>
+                        </div>
+                        <div class="refresh-dropdown">
+                            <button class="header-refresh-btn" onclick="refreshData()" title="Refresh Data">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <button class="refresh-dropdown-toggle" onclick="toggleRefreshDropdown()" title="More options">
+                                <i class="fas fa-caret-down"></i>
+                            </button>
+                            <div class="refresh-dropdown-menu" id="refresh-dropdown-menu">
+                                <a href="#" onclick="refreshData(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-database"></i> Refresh Cache
+                                </a>
+                                <a href="#" onclick="syncAndRefresh(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-sync"></i> Sync Data
+                                </a>
+                                <a href="#" onclick="syncRemoteDb(); toggleRefreshDropdown(); return false;">
+                                    <i class="fas fa-cloud-upload-alt"></i> Sync External DB
+                                </a>
+                            </div>
+                        </div>
+                        <button class="settings-btn" onclick="openSettings()" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <select id="account-selector" class="account-selector" onchange="switchAccount(this.value)">
+                            <option value="">Loading accounts...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #3b82f6;">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-value" id="total-tasks">-</div>
+                        <div class="stat-label">Total Tasks</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #10b981;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-value" id="completed-tasks">-</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #f59e0b;">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-value" id="pending-tasks">-</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #ef4444;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-value" id="critical-tasks">-</div>
+                        <div class="stat-label">Critical</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #8b5cf6;">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="stat-value" id="high-tasks">-</div>
+                        <div class="stat-label">High Priority</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #ec4899;">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div class="stat-value" id="overdue-tasks">-</div>
+                        <div class="stat-label">Overdue</div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="quick-stats">
+                    <div class="progress-ring-container">
+                        <svg class="progress-ring" width="120" height="120">
+                            <circle class="progress-ring-circle-bg" stroke="#e5e7eb" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
+                            <circle class="progress-ring-circle" id="completion-ring" stroke="#10b981" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span id="completion-rate">0%</span>
+                            <span class="progress-label">Complete</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hierarchy Section -->
+            <section id="hierarchy-section" class="section" style="display: none;">
+                <div class="header">
+                    <h1><i class="fas fa-project-diagram mr-2"></i>Hierarchical Task Visualization</h1>
+                    <div class="header-actions">
+                        <button class="filter-toggle-btn" onclick="toggleChartFilters()" title="Toggle Filter Panel">
+                            <i class="fas fa-filter"></i>
+                            <span>Filters</span>
+                        </button>
+                        <select id="hierarchy-account-selector" class="account-selector" onchange="switchAccountForHierarchy(this.value)">
+                            <option value="">Loading accounts...</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="refreshHierarchy()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="toggleFullscreen()">
+                            <i class="fas fa-expand"></i>
+                            Fullscreen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chart Filter Panel -->
+                <div class="hierarchy-filter-panel" id="hierarchy-filter-panel" style="display: none;">
+                    <div>
+                        <label>Search Tags</label>
+                        <input type="text" id="hierarchy-tag-search" class="filter-input" placeholder="e.g., pras,prod (3+ chars)">
+                    </div>
+                    <div>
+                        <label>Status</label>
+                        <select id="hierarchy-status-filter" class="filter-select">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Date Range</label>
+                        <input type="date" id="hierarchy-date-start" class="filter-input" style="width: 130px;">
+                        <span style="color: #6b7280;">to</span>
+                        <input type="date" id="hierarchy-date-end" class="filter-input" style="width: 130px;">
+                    </div>
+                    <button class="filter-btn" onclick="applyChartFilters()">
+                        <i class="fas fa-search"></i>
+                        Apply
+                    </button>
+                    <button class="clear-btn" onclick="clearChartFilters()">
+                        <i class="fas fa-times"></i>
+                        Clear
+                    </button>
+                </div>
+
+                <!-- View Toggle Control -->
+                <div class="hierarchy-view-toggle" id="hierarchy-view-toggle">
+                    <span class="view-mode-label">View Mode:</span>
+                    <div class="view-mode-buttons">
+                        <button class="view-mode-btn active" data-view="graph" onclick="window.switchHierarchyView('graph')">
+                            📊 Graph
+                        </button>
+                        <button class="view-mode-btn" data-view="both" onclick="window.switchHierarchyView('both')">
+                            🔀 Both
+                        </button>
+                        <button class="view-mode-btn" data-view="ledger" onclick="window.switchHierarchyView('ledger')">
+                            📋 Ledger
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ledger Panel -->
+                <div id="ledger-panel" class="ledger-panel" style="display: none;">
+                    <!-- Generated by hierarchy-ledger.js -->
+                </div>
+
+                <!-- Visualization Container -->
+                <div class="viz-container" id="hierarchy-viz-container">
+                    <svg class="hierarchy-svg" id="hierarchy-viz"></svg>
+                    
+                    <!-- Fullscreen exit button -->
+                    <button class="fullscreen-exit" id="fullscreen-exit" onclick="toggleFullscreen()" style="display: none;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Task Panel -->
+                <div class="task-panel" id="task-panel" style="display: none;">
+                    <div class="task-panel-header">
+                        <h3 id="selected-node-title">Selected Node Tasks</h3>
+                        <div class="task-panel-controls">
+                            <button class="btn btn-secondary" onclick="closeTaskPanel()">
+                                <i class="fas fa-times"></i>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                    <div class="task-panel-content">
+                        <div class="task-filters">
+                            <select id="node-task-status-filter" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                            <select id="node-task-priority-filter" class="filter-select">
+                                <option value="">All Priorities</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                            <input type="text" id="node-task-search-filter" class="filter-input" placeholder="Search tasks...">
+                            <input type="text" id="node-task-project-filter" class="filter-input" placeholder="Filter by project...">
+                            <input type="text" id="node-task-tags-filter" class="filter-input" placeholder="Filter by tags (comma separated)...">
+                            
+                            <!-- Date Filter Section -->
+                            <div class="filter-section date-filter-section">
+                                <div class="filter-row">
+                                    <label>Date Field:</label>
+                                    <select id="node-task-date-field" class="filter-select">
+                                        <option value="due">Due Date</option>
+                                        <option value="created_at">Created Date</option>
+                                        <option value="modified_at">Modified Date</option>
+                                    </select>
+                                </div>
+                                <div class="filter-row date-range-filter">
+                                    <input type="date" id="node-task-date-start" class="filter-input" placeholder="From date...">
+                                    <span style="color: #6b7280; margin: 0 0.5rem;">to</span>
+                                    <input type="date" id="node-task-date-end" class="filter-input" placeholder="To date...">
+                                </div>
+                            </div>
+                            
+                            <!-- Sort Section -->
+                            <div class="filter-section sort-filter-section">
+                                <div class="filter-row">
+                                    <label>Sort By:</label>
+                                    <select id="node-task-sort-field" class="filter-select">
+                                        <option value="due">Due Date</option>
+                                        <option value="created_at">Created Date</option>
+                                        <option value="modified_at">Modified Date</option>
+                                        <option value="priority">Priority</option>
+                                        <option value="title">Title</option>
+                                    </select>
+                                    <select id="node-task-sort-order" class="filter-select">
+                                        <option value="desc" selected>Descending</option>
+                                        <option value="asc">Ascending</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Clear Button -->
+                            <div class="filter-section clear-filter-section">
+                                <button id="node-task-clear-filters" class="btn btn-secondary" onclick="clearNodeFilters()">
+                                    <i class="fas fa-times"></i> Clear All Filters
+                                </button>
+                            </div>
+                        </div>
+                        <div class="node-tasks-grid" id="node-tasks-grid">
+                            <!-- Node-related tasks will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section id="tasks-section" class="section" style="display: none;">
+                <div class="header">
+                    <h1><i class="fas fa-tasks mr-2"></i>Task Management</h1>
+                    <div class="header-actions">
+                        <select id="tasks-account-selector" class="account-selector" onchange="switchAccountForTasks(this.value)">
+                            <option value="">Loading accounts...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Task Filters -->
+                <div class="task-filters-bar">
+                    <input type="text" id="task-search-filter" class="filter-input" placeholder="Search tasks..." oninput="filterTasks()">
+                    <select id="task-status-filter" class="filter-select" onchange="filterTasks()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <select id="task-priority-filter" class="filter-select" onchange="filterTasks()">
+                        <option value="">All Priorities</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <div class="filter-multiselect">
+                        <label class="filter-label">Filter by List</label>
+                        <div class="multiselect-container" id="task-list-filter-container">
+                            <!-- Multiselect will be initialized here -->
+                        </div>
+                    </div>
+                    <div class="filter-multiselect">
+                        <label class="filter-label">Filter by Tags</label>
+                        <div class="multiselect-container" id="task-tags-filter-container">
+                            <!-- Multiselect will be initialized here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Date Filter Section -->
+                    <div class="filter-section date-filter-section">
+                        <div class="filter-row">
+                            <label>Date Field:</label>
+                            <select id="task-date-field" class="filter-select" onchange="filterTasks()">
+                                <option value="due">Due Date</option>
+                                <option value="created_at">Created Date</option>
+                                <option value="modified_at">Modified Date</option>
+                            </select>
+                        </div>
+                        <div class="filter-row date-range-filter">
+                            <input type="date" id="task-date-start" class="filter-input" placeholder="From date..." onchange="filterTasks()">
+                            <span style="color: #6b7280; margin: 0 0.5rem;">to</span>
+                            <input type="date" id="task-date-end" class="filter-input" placeholder="To date..." onchange="filterTasks()">
+                        </div>
+                    </div>
+                    
+                    <!-- Sort Section -->
+                    <div class="filter-section sort-filter-section">
+                        <div class="filter-row">
+                            <label>Sort By:</label>
+                            <select id="task-sort-field" class="filter-select" onchange="filterTasks()">
+                                <option value="due">Due Date</option>
+                                <option value="created_at">Created Date</option>
+                                <option value="modified_at">Modified Date</option>
+                                <option value="priority">Priority</option>
+                                <option value="title">Title</option>
+                            </select>
+                            <select id="task-sort-order" class="filter-select" onchange="filterTasks()">
+                                <option value="desc" selected>Descending</option>
+                                <option value="asc">Ascending</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Clear Button -->
+                    <div class="filter-section clear-filter-section">
+                        <button id="task-clear-filters" class="btn btn-secondary" onclick="clearTasksFilters()">
+                            <i class="fas fa-times"></i> Clear All Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tasks Grid -->
+                <div class="tasks-count-display" id="tasks-count-display">
+                    <span id="tasks-count-text">Loading...</span>
+                </div>
+                <div class="tasks-grid" id="tasks-grid">
+                    <!-- Tasks will be populated here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Settings</h2>
+                <button class="modal-close" onclick="closeSettings()">&times;</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Auto-Refresh</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Enable Auto-Refresh</span>
+                        <span>Automatically refresh data at specified intervals</span>
+                    </div>
+                    <div class="setting-control">
+                        <div class="toggle-switch" id="auto-refresh-toggle" onclick="toggleAutoRefresh()"></div>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Refresh Interval</span>
+                        <span>How often to refresh data</span>
+                    </div>
+                    <div class="setting-control">
+                        <select class="settings-select" id="refresh-interval" onchange="updateRefreshInterval()">
+                            <option value="30">30 seconds</option>
+                            <option value="60">1 minute</option>
+                            <option value="300">5 minutes</option>
+                            <option value="600">10 minutes</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Display</h3>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Default View</span>
+                        <span>Section to show when dashboard loads</span>
+                    </div>
+                    <div class="setting-control">
+                        <select class="settings-select" id="default-view" onchange="updateDefaultView()">
+                            <option value="dashboard">Dashboard</option>
+                            <option value="hierarchy">Hierarchy</option>
+                            <option value="tasks">Tasks</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span>Hide Deleted Tasks</span>
+                        <span>Never show deleted tasks when enabled</span>
+                    </div>
+                    <div class="setting-control">
+                        <div class="toggle-switch" id="hide-deleted-toggle" onclick="toggleHideDeleted()"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-secondary-modal" onclick="closeSettings()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <script type="module" src="{{ base_path }}/static/js/hierarchy.js"></script>
+    <script type="module" src="{{ base_path }}/static/js/dashboard.js?v=4"></script>
+</body>
+</html>

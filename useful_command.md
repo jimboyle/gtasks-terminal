@@ -58,3 +58,55 @@ gtasks interactive -- list --filter today:created_at --search "[prasen" --order-
 gtasks interactive -- list --filter 08122025:due_date --search "[prasen" --order-by "due_date:desc"
 
 gtasks interactive -- list --filter 08122025:due_date
+
+# Kill all Python processes listening on ports
+lsof -i -P -n | grep LISTEN | grep Python | awk '{print $2}' | xargs kill -9
+lsof -i -P -n | grep LISTEN | grep python | awk '{print $2}' | xargs kill -9
+
+# python kill
+
+# Find the gunicorn process
+ps aux | grep gunicorn
+
+# Kill all gunicorn processes for this app
+pkill -f "gunicorn.*main_dashboard:app"
+
+# Or kill by the main process ID (the first one listed)
+kill <PID>
+
+# Force kill if needed
+pkill -9 -f "gunicorn.*main_dashboard:app"
+
+
+# Ngnix 
+# Test the configuration
+sudo nginx -t
+
+# Reload Nginx (no downtime)
+sudo systemctl reload nginx
+
+# Restart the Flask/Gunicorn service
+sudo systemctl restart gtasks-dashboard
+
+# Dashboard/Gunicorn logs:
+# Live logs
+sudo journalctl -u gtasks-dashboard -f
+
+# Recent logs
+sudo journalctl -u gtasks-dashboard -n 100
+
+# Check for errors
+sudo journalctl -u gtasks-dashboard --since "1 hour ago" | grep -i error
+
+Nginx logs:
+
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
+Application logs (if configured):
+
+# Check if app writes to file
+tail -f /var/www/html/gtasks/gtasks-terminal/logs/app.log
+
+
+# active env
+source .venv/bin/activate
