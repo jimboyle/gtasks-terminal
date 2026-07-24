@@ -57,7 +57,7 @@ def list():
             current_account = f.read().strip()
             
     if gtasks_dir.exists():
-        account_dirs = [d.name for d in gtasks_dir.iterdir() if d.is_dir() and d.name != 'default']
+        account_dirs = [d.name for d in gtasks_dir.iterdir() if d.is_dir() and d.name not in ('default', 'logs') and not d.name.startswith('.')]
         if account_dirs:
             click.echo("Available accounts:")
             # Use global config to get default account
@@ -119,3 +119,76 @@ def current():
         return
     
     click.echo("No default account set")
+
+
+@account.command()
+@click.argument('name', required=False)
+@click.option('--name', '-n', 'option_name', help='Account name')
+@click.option('--credentials', '-c', help='Path to credentials JSON file')
+@click.option('--auth/--no-auth', default=False, help='Run authentication flow immediately')
+def add(name, option_name, credentials, auth):
+    """Add a new Google Tasks account"""
+    account_name = name or option_name
+    if not account_name:
+        click.echo("❌ Error: Account name is required. Provide it as an argument or using --name option.")
+        raise click.Abort()
+
+    # Create account directory
+    account_dir = Path.home() / '.gtasks' / account_name
+    account_dir.mkdir(parents=True, exist_ok=True)
+
+    # Copy credentials if provided
+    if credentials:
+        cred_path = Path(credentials)
+        if not cred_path.exists():
+            click.echo(f"❌ Error: Credentials file not found at '{credentials}'")
+            raise click.Abort()
+        dest_cred = account_dir / 'credentials.json'
+        import shutil
+        shutil.copy(cred_path, dest_cred)
+        click.echo(f"  Saved credentials to '{dest_cred}'")
+
+    # Register in global config
+    from gtasks_cli.storage.config_manager import ConfigManager
+    config = ConfigManager.get_global_config()
+    accounts = config.get('accounts', {})
+    if account_name not in accounts:
+        accounts[account_name] = {'name': account_name, 'authenticated': False}
+        config.set('accounts', accounts)
+
+    click.echo(f"✅ Successfully added account '{account_name}'!")
+
+    # Run auth if requested
+    if auth:
+        from gtasks_cli.integrations.google_auth import GoogleAuthManager
+        auth_manager = GoogleAuthManager(account_name=account_name)
+        if auth_manager.authenticate():
+            accounts[account_name]['authenticated'] = True
+            config.set('accounts', accounts)
+            click.echo(f"✅ Successfully authenticated account '{account_name}'!")
+        else:
+            click.echo(f"❌ Authentication failed for account '{account_name}'.")
+    else:
+        click.echo(f"  To authenticate, run: gtasks --account {account_name} auth")
+
+
+@account.command(name='remove')
+@click.argument('name', required=False)
+@click.option('--name', '-n', 'option_name', help='Account name')
+def remove(name, option_name):
+    """Remove a Google Tasks account configuration"""
+    account_name = name or option_name
+    if not account_name:
+        click.echo("❌ Error: Account name is required.")
+        raise click.Abort()
+
+    from gtasks_cli.storage.config_manager import ConfigManager
+    config = ConfigManager.get_global_config()
+    accounts = config.get('accounts', {})
+
+    if account_name in accounts:
+        del accounts[account_name]
+        config.set('accounts', accounts)
+        click.echo(f"✅ Removed account '{account_name}' from configuration.")
+    else:
+        click.echo(f"⚠️ Account '{account_name}' was not found in configuration.")
