@@ -318,7 +318,10 @@
             <section id="tasks-section" class="section" style="display: none;">
                 <div class="header">
                     <h1><i class="fas fa-tasks mr-2"></i>Task Management</h1>
-                    <div class="header-actions">
+                    <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn btn-primary" onclick="openAddModal()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer;">
+                            <i class="fas fa-plus"></i> New Task
+                        </button>
                         <select id="tasks-account-selector" class="account-selector" onchange="switchAccountForTasks(this.value)">
                             <option value="">Loading accounts...</option>
                         </select>
@@ -525,6 +528,72 @@
             <div class="modal-footer">
                 <button class="btn-secondary-modal" onclick="closeEditModal()">Cancel</button>
                 <button class="btn-primary-modal" onclick="saveTaskEdit()"><i class="fas fa-save"></i> Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="add-task-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Add New Task</h2>
+                <button class="modal-close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="edit-modal-body">
+                <div class="edit-form-group">
+                    <label>Title <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="add-task-title" class="filter-input" placeholder="Task title">
+                </div>
+                <div class="edit-form-row">
+                    <div class="edit-form-group">
+                        <label>Account</label>
+                        <select id="add-task-account" class="filter-select" onchange="onAddAccountChange(this.value)">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>List</label>
+                        <select id="add-task-list" class="filter-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <div class="edit-form-row">
+                    <div class="edit-form-group">
+                        <label>Priority</label>
+                        <select id="add-task-priority" class="filter-select">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Status</label>
+                        <select id="add-task-status" class="filter-select">
+                            <option value="pending" selected>Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="add-task-due" class="filter-input">
+                    </div>
+                </div>
+                <div class="edit-form-group">
+                    <label>Notes <span class="markdown-hint">— Markdown supported</span></label>
+                    <div class="edit-notes-tabs">
+                        <button class="edit-notes-tab active" id="add-notes-tab-edit" onclick="switchAddNotesTab('edit')">Edit</button>
+                        <button class="edit-notes-tab" id="add-notes-tab-preview" onclick="switchAddNotesTab('preview')">Preview</button>
+                    </div>
+                    <textarea id="add-task-notes" class="filter-input" rows="6" placeholder="Notes (Markdown supported: **bold**, *italic*, # heading, - list, `code`)"></textarea>
+                    <div id="add-notes-preview" class="notes-preview-box" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary-modal" onclick="closeAddModal()">Cancel</button>
+                <button class="btn-primary-modal" onclick="saveNewTask()"><i class="fas fa-plus"></i> Create Task</button>
             </div>
         </div>
     </div>

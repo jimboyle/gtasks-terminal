@@ -124,10 +124,12 @@ def api_refresh_local():
     from routes.api import api_refresh_cache
     return api_refresh_cache()
 
-@app.route(f'{BASE_PATH}/api/tasks')
+@app.route(f'{BASE_PATH}/api/tasks', methods=['GET', 'POST'])
 def api_tasks_local():
-    """Get tasks with optional filters"""
-    from routes.api import api_tasks
+    """Get tasks or create task"""
+    from routes.api import api_tasks, api_create_task
+    if request.method == 'POST':
+        return api_create_task()
     return api_tasks()
 
 @app.route(f'{BASE_PATH}/api/accounts')
@@ -284,10 +286,12 @@ def api_refresh_root():
     from routes.api import api_refresh_cache
     return api_refresh_cache()
 
-@app.route('/api/tasks')
+@app.route('/api/tasks', methods=['GET', 'POST'])
 def api_tasks_root():
-    """Get tasks with optional filters (local development)"""
-    from routes.api import api_tasks
+    """Get tasks or create task (local development)"""
+    from routes.api import api_tasks, api_create_task
+    if request.method == 'POST':
+        return api_create_task()
     return api_tasks()
 
 @app.route('/api/tasks/<task_id>', methods=['GET', 'PUT'])

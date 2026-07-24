@@ -1590,11 +1590,142 @@ window.getListsWithCounts = getListsWithCounts;
 window.getTagsWithCounts = getTagsWithCounts;
 window.updateFilteredMultiselect = updateFilteredMultiselect;
 
-// Edit Modal Functions
+// Edit & Add Modal Functions
 window.openEditModal = openEditModal;
 window.closeEditModal = closeEditModal;
 window.saveTaskEdit = saveTaskEdit;
 window.switchNotesTab = switchNotesTab;
+window.openAddModal = openAddModal;
+window.closeAddModal = closeAddModal;
+window.saveNewTask = saveNewTask;
+window.onAddAccountChange = onAddAccountChange;
+window.switchAddNotesTab = switchAddNotesTab;
+
+function openAddModal() {
+    // Reset form fields
+    document.getElementById('add-task-title').value = '';
+    document.getElementById('add-task-priority').value = 'medium';
+    document.getElementById('add-task-status').value = 'pending';
+    document.getElementById('add-task-due').value = '';
+    document.getElementById('add-task-notes').value = '';
+
+    // Populate Account select
+    const accountSelect = document.getElementById('add-task-account');
+    accountSelect.innerHTML = '';
+    const accounts = (typeof dashboardData !== 'undefined' && dashboardData.accounts) ? dashboardData.accounts : [];
+    accounts.forEach(acc => {
+        const opt = document.createElement('option');
+        opt.value = acc.id;
+        opt.textContent = acc.name || acc.id;
+        if (acc.id === window.currentAccountId) opt.selected = true;
+        accountSelect.appendChild(opt);
+    });
+
+    onAddAccountChange(accountSelect.value || window.currentAccountId);
+    switchAddNotesTab('edit');
+    document.getElementById('add-task-modal').classList.add('active');
+}
+
+function closeAddModal() {
+    document.getElementById('add-task-modal').classList.remove('active');
+}
+
+function onAddAccountChange(accountId) {
+    const listSelect = document.getElementById('add-task-list');
+    listSelect.innerHTML = '';
+
+    const availableLists = new Set();
+    if (typeof dashboardData !== 'undefined') {
+        (dashboardData.lists || []).forEach(l => { if (l) availableLists.add(l); });
+        (window.allGoogleLists || []).forEach(l => { if (l && l.title) availableLists.add(l.title); });
+        (dashboardData.tasks || []).forEach(t => { if (t.list_title) availableLists.add(t.list_title); });
+    }
+    if (availableLists.size === 0) availableLists.add('My Tasks');
+
+    Array.from(availableLists).sort().forEach(listTitle => {
+        const opt = document.createElement('option');
+        opt.value = listTitle;
+        opt.textContent = listTitle;
+        listSelect.appendChild(opt);
+    });
+}
+
+function switchAddNotesTab(tab) {
+    const editBtn = document.getElementById('add-notes-tab-edit');
+    const prevBtn = document.getElementById('add-notes-tab-preview');
+    if (editBtn && prevBtn) {
+        editBtn.classList.toggle('active', tab === 'edit');
+        prevBtn.classList.toggle('active', tab === 'preview');
+    }
+
+    const textarea = document.getElementById('add-task-notes');
+    const preview = document.getElementById('add-notes-preview');
+
+    if (tab === 'preview') {
+        textarea.style.display = 'none';
+        preview.style.display = 'block';
+        if (typeof marked !== 'undefined') {
+            preview.innerHTML = marked.parse(textarea.value || '');
+        } else {
+            preview.textContent = textarea.value;
+        }
+    } else {
+        textarea.style.display = 'block';
+        preview.style.display = 'none';
+    }
+}
+
+async function saveNewTask() {
+    const title = document.getElementById('add-task-title').value.trim();
+    if (!title) {
+        showNotification('Task title is required!', 'error');
+        return;
+    }
+
+    const payload = {
+        title: title,
+        account_id: document.getElementById('add-task-account').value,
+        list_title: document.getElementById('add-task-list').value,
+        priority: document.getElementById('add-task-priority').value,
+        status: document.getElementById('add-task-status').value,
+        due: document.getElementById('add-task-due').value || null,
+        notes: document.getElementById('add-task-notes').value
+    };
+
+    try {
+        const basePath = window.GTASKS_BASE_PATH || '';
+        let response = await fetch(`${basePath}/api/tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.status === 405 || response.status === 404) {
+            response = await fetch(`/api/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            const msg = data.synced_to_google ? 'Task created & synced to Google Tasks ✅' : 'Task created locally ✅';
+            showNotification(msg, 'success');
+            closeAddModal();
+            if (typeof window.loadDashboard === 'function') {
+                window.loadDashboard();
+            } else if (typeof window.loadTasks === 'function') {
+                window.loadTasks(window.currentAccountId);
+            }
+        } else {
+            showNotification(data.error || 'Failed to create task', 'error');
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+        showNotification('Error creating task', 'error');
+    }
+}
 
 function openEditModal(taskId) {
     const tasks = (typeof dashboardData !== 'undefined' && dashboardData.tasks) ? dashboardData.tasks : [];
@@ -1606,17 +1737,23 @@ function openEditModal(taskId) {
     document.getElementById('edit-task-title').value = task.title || '';
     document.getElementById('edit-task-priority').value = task.calculated_priority || task.priority || 'medium';
     document.getElementById('edit-task-status').value = task.status || 'pending';
-    document.getElementById('edit-task-notes').value = task.notes || '';
+    document.getElementById('edit-task-notes').value = task.notes || task.description || '';
 
     // Populate list dropdown with all available lists
     const listSelect = document.getElementById('edit-task-list');
     listSelect.innerHTML = '';
-    const allLists = (window.allGoogleLists || []);
-    allLists.forEach(list => {
+    const availableLists = new Set();
+    (window.allGoogleLists || []).forEach(l => { if (l && l.title) availableLists.add(l.title); });
+    (typeof dashboardData !== 'undefined' && dashboardData.lists ? dashboardData.lists : []).forEach(l => { if (l) availableLists.add(l); });
+    (typeof dashboardData !== 'undefined' && dashboardData.tasks ? dashboardData.tasks : []).forEach(t => { if (t.list_title) availableLists.add(t.list_title); });
+    if (task.list_title) availableLists.add(task.list_title);
+    if (availableLists.size === 0) availableLists.add('My Tasks');
+
+    Array.from(availableLists).sort().forEach(listTitle => {
         const opt = document.createElement('option');
-        opt.value = list.title;
-        opt.textContent = list.title;
-        if (list.title === task.list_title) opt.selected = true;
+        opt.value = listTitle;
+        opt.textContent = listTitle;
+        if (listTitle === task.list_title) opt.selected = true;
         listSelect.appendChild(opt);
     });
 
@@ -1646,51 +1783,43 @@ async function saveTaskEdit() {
     try {
         const basePath = window.GTASKS_BASE_PATH || '';
         const apiPath = `${basePath}/api/tasks/${taskId}`;
-        const response = await fetch(apiPath, {
+        let response = await fetch(apiPath, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
-        if (response.status === 405) {
-            // BASE_PATH not recognized (server running without subpath), try root-level API
+        if (response.status === 405 || response.status === 404) {
+            // BASE_PATH not recognized, try root-level API
             const fallbackPath = `/api/tasks/${taskId}`;
-            const fallbackResponse = await fetch(fallbackPath, {
+            response = await fetch(fallbackPath, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            const data = await fallbackResponse.json();
-            if (data.success) {
-                showNotification('Task updated ✅', 'success');
-                closeEditModal();
-                if (typeof window.loadTasks === 'function') {
-                    window.loadTasks(window.currentAccountId);
-                }
-                return;
-            } else {
-                showNotification('Failed to update task', 'error');
-                return;
-            }
         }
 
         const data = await response.json();
         if (data.success) {
-            showNotification('Task updated ✅', 'success');
+            const msg = data.synced_to_google ? 'Task updated & moved/synced to Google Tasks ✅' : 'Task updated ✅';
+            showNotification(msg, 'success');
             closeEditModal();
-            if (typeof window.loadTasks === 'function') {
+            if (typeof window.loadDashboard === 'function') {
+                window.loadDashboard();
+            } else if (typeof window.loadTasks === 'function') {
                 window.loadTasks(window.currentAccountId);
             }
         } else {
             showNotification('Failed to update task', 'error');
         }
     } catch (error) {
+        console.error('Error updating task:', error);
         showNotification('Error updating task', 'error');
     }
 }
 
 function switchNotesTab(tab) {
-    const tabs = document.querySelectorAll('.edit-notes-tab');
+    const tabs = document.querySelectorAll('#edit-task-modal .edit-notes-tab');
     tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
 
     const textarea = document.getElementById('edit-task-notes');

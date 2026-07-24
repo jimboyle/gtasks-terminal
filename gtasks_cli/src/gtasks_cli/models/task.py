@@ -33,7 +33,7 @@ class Task(BaseModel):
     project: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
     parent_id: Optional[str] = None
-    tasklist_id: str
+    tasklist_id: Optional[str] = "@default"
     list_title: Optional[str] = None
     position: int = 0
     notes: Optional[str] = None
@@ -44,7 +44,7 @@ class Task(BaseModel):
     actual_duration: Optional[int] = None
     recurrence_rule: Optional[str] = None
     dependencies: List[str] = Field(default_factory=list)  # List of task IDs this task depends on
-    is_recurring: bool = False  # Whether this is a recurring task template
+    is_recurring: Optional[bool] = False  # Whether this is a recurring task template
     recurring_task_id: Optional[str] = None  # ID of the original recurring task template
 
     class Config:

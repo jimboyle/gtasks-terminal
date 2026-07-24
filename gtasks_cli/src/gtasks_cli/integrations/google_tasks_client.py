@@ -210,7 +210,7 @@ class GoogleTasksClient:
                 is_duplicate = is_task_duplicate(
                     task_title=title, 
                     task_description=full_description or "", 
-                    task_due_date=formatted_due or "", 
+                    task_created_date=formatted_due or "", 
                     task_status="pending",
                     use_google_tasks=True
                 )
@@ -518,6 +518,40 @@ class GoogleTasksClient:
             logger.error(f"Error getting task from Google Tasks: {e}")
             return None
     
+    def _find_google_task_id(self, tasklist_id: str, title: str) -> Optional[str]:
+        """Find a Google Task ID by matching task title in tasklist_id or all lists"""
+        import re
+        def norm(t):
+            return re.sub(r'\s*\[[^\]]+\]', '', t or '').strip().lower()
+
+        target_norm = norm(title)
+        if not target_norm:
+            return None
+
+        # Check given tasklist_id first
+        try:
+            tasks = self.list_tasks(tasklist_id=tasklist_id, show_completed=True, show_hidden=True)
+            for gt in tasks:
+                if norm(gt.title) == target_norm or (gt.title and title and gt.title.strip().lower() == title.strip().lower()):
+                    return gt.id
+        except Exception as e:
+            logger.debug(f"Error searching tasklist {tasklist_id}: {e}")
+
+        # Search across all tasklists if not found in target list
+        try:
+            for tl in self.list_tasklists():
+                t_id = tl.get('id')
+                if t_id == tasklist_id:
+                    continue
+                tasks = self.list_tasks(tasklist_id=t_id, show_completed=True, show_hidden=True)
+                for gt in tasks:
+                    if norm(gt.title) == target_norm or (gt.title and title and gt.title.strip().lower() == title.strip().lower()):
+                        return gt.id
+        except Exception as e:
+            logger.debug(f"Error searching all tasklists: {e}")
+
+        return None
+
     def update_task(self, task: Task, tasklist_id: str = None) -> Optional[Task]:
         """
         Update a task in Google Tasks.
@@ -541,24 +575,47 @@ class GoogleTasksClient:
         try:
             # Convert local task to Google Tasks format
             google_task = self._convert_local_task_to_google(task)
-            
-            # Update the task in Google Tasks
-            result = self.service.tasks().update(
-                tasklist=tasklist_id,
-                task=task.id,
-                body=google_task
-            ).execute()
-            logger.info(f"Updated task in Google Tasks: {task.id}")
+            target_id = task.id
+            payload_body = dict(google_task)
+
+            # Try direct update first
+            try:
+                payload_body['id'] = target_id
+                result = self.service.tasks().update(
+                    tasklist=tasklist_id,
+                    task=target_id,
+                    body=payload_body
+                ).execute()
+            except HttpError as e:
+                err_msg = str(e).lower()
+                if e.resp.status in (400, 404) or 'invalid task id' in err_msg or 'not found' in err_msg:
+                    logger.info(f"Task ID '{target_id}' not recognized directly by Google Tasks list '{tasklist_id}'. Searching by title...")
+                    found_id = self._find_google_task_id(tasklist_id, task.title)
+                    if found_id:
+                        logger.info(f"Resolved Google Task ID '{found_id}' for title '{task.title}'")
+                        payload_body['id'] = found_id
+                        result = self.service.tasks().update(
+                            tasklist=tasklist_id,
+                            task=found_id,
+                            body=payload_body
+                        ).execute()
+                    else:
+                        logger.info(f"Task '{task.title}' not found on Google Tasks. Creating new remote task...")
+                        return self.create_task(task)
+                else:
+                    raise e
+
+            logger.info(f"Updated task in Google Tasks: {task.title}")
             
             # Convert back to local task format
             updated_task = self._convert_google_task_to_local(result)
             updated_task.tasklist_id = tasklist_id  # Set the tasklist_id
             return updated_task
         except HttpError as e:
-            logger.error(f"Failed to update task: {e}")
+            logger.error(f"Failed to update task '{task.title}': {e}")
             return None
         except Exception as e:
-            logger.error(f"Unexpected error updating task: {e}")
+            logger.error(f"Unexpected error updating task '{task.title}': {e}")
             return None
     
     def delete_task(self, task_id: str, tasklist_id: str = None) -> bool:
@@ -581,7 +638,18 @@ class GoogleTasksClient:
             tasklist_id = '@default'
         
         try:
-            self.service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
+            try:
+                self.service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
+            except HttpError as e:
+                err_msg = str(e).lower()
+                if e.resp.status in (400, 404) or 'invalid task id' in err_msg or 'not found' in err_msg:
+                    found_id = self._find_google_task_id(tasklist_id, task_id)
+                    if found_id:
+                        self.service.tasks().delete(tasklist=tasklist_id, task=found_id).execute()
+                        logger.info(f"Deleted task from Google Tasks: {found_id}")
+                        return True
+                    return False
+                raise e
             logger.info(f"Deleted task from Google Tasks: {task_id}")
             return True
         except HttpError as e:
@@ -653,16 +721,19 @@ class GoogleTasksClient:
         if task.id:
             google_task['id'] = task.id
             
-        # Handle notes field - combine description and notes (similar to create_task)
+        # Handle notes field - avoid duplicating content if description and notes match
         notes_content = ""
-        if task.description:
-            notes_content = task.description
-        if task.notes is not None:  # Check for None specifically to allow empty strings
-            if notes_content:
-                notes_content += "\n" + task.notes
+        desc = (task.description or "").strip()
+        nts = (task.notes or "").strip()
+        
+        if desc and nts:
+            if desc == nts:
+                notes_content = nts
             else:
-                notes_content = task.notes
-                
+                notes_content = desc + "\n" + nts
+        else:
+            notes_content = nts or desc
+            
         if notes_content:
             google_task['notes'] = notes_content
             

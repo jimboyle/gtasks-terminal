@@ -251,8 +251,16 @@ class AdvancedSyncManager:
                 google_signatures.add(signature)
             
             # Get local tasks
-            self._report_progress(25, "Comparing local and remote tasks...", 'running')
-            local_tasks = [Task(**task_dict) for task_dict in self.local_storage.load_tasks()]
+            raw_local_tasks = self.local_storage.load_tasks()
+            local_tasks = []
+            for td in raw_local_tasks:
+                if not td.get('tasklist_id'):
+                    td['tasklist_id'] = '@default'
+                if td.get('is_recurring') is None:
+                    td['is_recurring'] = False
+                else:
+                    td['is_recurring'] = bool(td['is_recurring'])
+                local_tasks.append(Task(**td))
             logger.info(f"Retrieved {len(local_tasks)} local tasks")
             
             # Create a set of local task signatures for duplicate checking

@@ -247,8 +247,8 @@ def api_data():
     task_objects = [Task.from_dict(t) for t in tasks]
     stats = DashboardStats.from_tasks(task_objects)
     
-    # Get all unique list names from task_lists table for the current account
-    list_names = []
+    # Get all unique list names from task_lists table and loaded tasks for the current account
+    list_names = set()
     if current_account_id:
         try:
             from pathlib import Path
@@ -260,35 +260,53 @@ def api_data():
             if db_path.exists():
                 conn = sqlite3.connect(str(db_path))
                 cursor = conn.cursor()
-                cursor.execute("SELECT DISTINCT list_name FROM task_lists ORDER BY list_name")
-                list_names = [row[0] for row in cursor.fetchall()]
+                try:
+                    cursor.execute("SELECT DISTINCT list_name FROM task_lists WHERE list_name IS NOT NULL AND list_name != ''")
+                    for row in cursor.fetchall():
+                        if row[0]:
+                            list_names.add(row[0])
+                except Exception as e:
+                    print(f"⚠️  Error loading list names: {e}")
                 conn.close()
         except Exception as e:
             print(f"⚠️  Error loading list names: {e}")
-    
-    # Get ALL Google task lists (including empty ones) via Google API
+            
+    for t in tasks:
+        lt = t.get('list_title')
+        if lt:
+            list_names.add(lt)
+
+    # Get ALL Google task lists (including empty ones) via Google API for current_account_id
     all_google_lists = []
-    try:
-        import sys
-        gtasks_cli_path = Path(__file__).parent.parent.parent / 'gtasks_cli' / 'src'
-        if str(gtasks_cli_path) not in sys.path:
-            sys.path.insert(0, str(gtasks_cli_path))
-        from gtasks_cli.integrations.google_tasks_client import GoogleTasksClient
-        google_client = GoogleTasksClient(account_name='Work')
-        google_client.connect()
-        google_lists = google_client.list_tasklists()
-        all_google_lists = [
-            {'id': t['id'], 'title': t['title']}
-            for t in google_lists
-        ]
-    except Exception as e:
-        print(f"⚠️  Error loading Google task lists: {e}")
+    if current_account_id:
+        try:
+            import sys
+            from pathlib import Path
+            gtasks_cli_path = Path(__file__).parent.parent.parent / 'gtasks_cli' / 'src'
+            if str(gtasks_cli_path) not in sys.path:
+                sys.path.insert(0, str(gtasks_cli_path))
+            from gtasks_cli.integrations.google_tasks_client import GoogleTasksClient
+            google_client = GoogleTasksClient(account_name=current_account_id)
+            if google_client.connect():
+                google_lists = google_client.list_tasklists()
+                for gl in google_lists:
+                    all_google_lists.append({'id': gl['id'], 'title': gl['title']})
+                    list_names.add(gl['title'])
+        except Exception as e:
+            print(f"⚠️  Error loading Google task lists for account '{current_account_id}': {e}")
     
+    sorted_list_names = sorted(list(list_names))
+    if not sorted_list_names:
+        sorted_list_names = ['My Tasks']
+        
+    if not all_google_lists:
+        all_google_lists = [{'id': name, 'title': name} for name in sorted_list_names]
+
     return jsonify({
         'tasks': tasks,
         'accounts': [a.to_dict() for a in _dashboard_state['accounts']],
         'current_account': current_account_id,
-        'lists': list_names,
+        'lists': sorted_list_names,
         'all_google_lists': all_google_lists,
         'stats': {
             'total': stats.total_tasks,
@@ -489,9 +507,160 @@ def get_task(task_id):
     return jsonify({'error': 'Task not found'}), 404
 
 
+@api.route('/tasks', methods=['POST'])
+def api_create_task():
+    """Create a new task in local DB and sync immediately to Google Tasks & Turso"""
+    import uuid
+    from datetime import datetime
+
+    data = request.get_json() or {}
+    title = data.get('title', '').strip()
+    if not title:
+        return jsonify({'success': False, 'error': 'Title is required'}), 400
+
+    account_id = data.get('account_id', _dashboard_state.get('current_account'))
+    if not account_id or account_id not in _dashboard_state.get('tasks', {}):
+        account_id = _dashboard_state.get('current_account') or (list(_dashboard_state['tasks'].keys())[0] if _dashboard_state.get('tasks') else 'default')
+
+    list_title = data.get('list_title', 'My Tasks')
+    priority = data.get('priority', 'medium')
+    status = data.get('status', 'pending')
+    due = data.get('due', None)
+    notes = data.get('notes', '')
+
+    import re
+    import json
+    extracted_tags = re.findall(r'\[([^\]]+)\]', f"{title} {notes}")
+
+    task_id = str(uuid.uuid4())
+    now_iso = datetime.now().isoformat()
+
+    new_task = {
+        'id': task_id,
+        'title': title,
+        'notes': notes,
+        'description': notes,
+        'priority': priority,
+        'calculated_priority': priority,
+        'status': status,
+        'due': due,
+        'list_title': list_title,
+        'account_id': account_id,
+        'created_at': now_iso,
+        'modified_at': now_iso,
+        'tags': extracted_tags,
+        'dependencies': []
+    }
+
+    # Save to local SQLite database
+    try:
+        import sqlite3
+        from pathlib import Path
+        gtasks_home = Path.home() / '.gtasks'
+        db_path = gtasks_home / account_id / 'tasks.db'
+        if not db_path.exists():
+            db_path = gtasks_home / 'tasks.db'
+
+        if db_path and db_path.exists():
+            conn = sqlite3.connect(str(db_path))
+            cursor = conn.cursor()
+
+            # Check table schema for list_title and tags
+            cursor.execute("PRAGMA table_info(tasks)")
+            columns = [col[1] for col in cursor.fetchall()]
+
+            tags_json = json.dumps(extracted_tags)
+            if 'list_title' in columns:
+                cursor.execute("""
+                    INSERT INTO tasks (id, title, description, notes, priority, status, due, tags, created_at, modified_at, list_title)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (task_id, title, notes, notes, priority, status, due, tags_json, now_iso, now_iso, list_title))
+            else:
+                cursor.execute("""
+                    INSERT INTO tasks (id, title, description, notes, priority, status, due, tags, created_at, modified_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (task_id, title, notes, notes, priority, status, due, tags_json, now_iso, now_iso))
+
+            cursor.execute("INSERT INTO task_lists (task_id, list_name) VALUES (?, ?)", (task_id, list_title))
+
+            conn.commit()
+            conn.close()
+            print(f'[API] Task {task_id} created in local DB for account {account_id}')
+    except Exception as e:
+        print(f'[API] Error saving new task to local DB: {e}')
+
+    # Add to memory cache
+    _dashboard_state['current_account'] = account_id
+    try:
+        from pathlib import Path
+        current_account_file = Path.home() / '.gtasks' / '.current_account'
+        current_account_file.write_text(account_id)
+    except Exception as e:
+        print(f"Failed to update current account file: {e}")
+
+    if account_id not in _dashboard_state['tasks']:
+        _dashboard_state['tasks'][account_id] = []
+    _dashboard_state['tasks'][account_id].insert(0, new_task)
+
+    # Immediate Sync to Google Tasks
+    synced_to_google = False
+    try:
+        import sys
+        from pathlib import Path
+        gtasks_cli_path = Path(__file__).parent.parent.parent / 'gtasks_cli' / 'src'
+        if str(gtasks_cli_path) not in sys.path:
+            sys.path.insert(0, str(gtasks_cli_path))
+
+        from gtasks_cli.integrations.google_tasks_client import GoogleTasksClient
+        from gtasks_cli.models.task import Task as CLITask, TaskStatus, Priority as CLIPriority
+
+        google_client = GoogleTasksClient(account_name=account_id)
+        if google_client.connect():
+            all_lists = google_client.list_tasklists()
+            target_list_id = '@default'
+            for tl in all_lists:
+                if tl.get('title') == list_title:
+                    target_list_id = tl['id']
+                    break
+
+            cli_status = TaskStatus.COMPLETED if status == 'completed' else TaskStatus.PENDING
+            cli_prio = CLIPriority.HIGH if priority == 'high' else CLIPriority.CRITICAL if priority == 'critical' else CLIPriority.MEDIUM
+
+            cli_task = CLITask(
+                id=task_id,
+                title=title,
+                notes=notes,
+                description=notes,
+                due=due,
+                status=cli_status,
+                priority=cli_prio,
+                tasklist_id=target_list_id
+            )
+
+            created_google_task = google_client.create_task(cli_task)
+            if created_google_task:
+                synced_to_google = True
+                print(f"[API] ✅ New task {task_id} synced immediately to Google Tasks list '{list_title}'")
+    except Exception as e:
+        print(f"[API] ❌ Error syncing new task to Google Tasks: {e}")
+
+    # Immediate Sync to Turso DB
+    try:
+        turso_sync_thread = threading.Thread(
+            target=_sync_task_to_turso_background,
+            args=(task_id, account_id),
+            daemon=True
+        )
+        turso_sync_thread.start()
+    except Exception as e:
+        print(f"[API] Error triggering Turso sync: {e}")
+
+    return jsonify({'success': True, 'task': new_task, 'synced_to_google': synced_to_google})
+
+
 @api.route('/tasks/<task_id>', methods=['PUT'])
 def update_task(task_id):
-    """Update a task's title, notes, description, priority, status"""
+    """Update a task's title, notes, description, priority, status, list_title"""
     from datetime import datetime
     data = request.get_json() or {}
     account_id = data.get('account_id', _dashboard_state.get('current_account'))
@@ -514,17 +683,28 @@ def update_task(task_id):
     if not target_task:
         return jsonify({'success': False, 'error': 'Task not found'}), 404
 
-    # Apply updates
-    updatable_fields = ['title', 'notes', 'description', 'priority', 'status', 'due', 'tags', 'list_title']
-    for field in updatable_fields:
-        if field in data:
-            target_task[field] = data[field]
+    old_list_title = target_task.get('list_title', 'My Tasks')
+
+    # Synchronize description with notes and extract tags
+    if 'notes' in data:
+        target_task['notes'] = data['notes']
+        target_task['description'] = data['notes']
+    elif 'description' in data:
+        target_task['notes'] = data['description']
+        target_task['description'] = data['description']
+
+    import re
+    extracted_tags = re.findall(r'\[([^\]]+)\]', f"{target_task.get('title', '')} {target_task.get('notes', '')}")
+    target_task['tags'] = extracted_tags
 
     target_task['modified_at'] = datetime.now().isoformat()
+    new_list_title = target_task.get('list_title', old_list_title)
 
     # Sync to local SQLite
+    db_path = None
     try:
         import sqlite3
+        import json
         from pathlib import Path
         gtasks_home = Path.home() / '.gtasks'
         db_path = gtasks_home / target_account / 'tasks.db'
@@ -535,20 +715,29 @@ def update_task(task_id):
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
 
+            # Check table schema
+            cursor.execute("PRAGMA table_info(tasks)")
+            columns = [col[1] for col in cursor.fetchall()]
+
             # Build dynamic UPDATE based on provided fields
             set_clauses = ['modified_at = ?']
             values = [target_task['modified_at']]
 
-            for field in updatable_fields:
-                if field in data:
-                    col_name = 'description' if field == 'description' else field
-                    set_clauses.append(f'{col_name} = ?')
-                    val = target_task[field]
-                    # tags are stored as JSON string
-                    if field == 'tags' and isinstance(val, list):
-                        import json
-                        val = json.dumps(val)
-                    values.append(val)
+            # Explicitly sync description, notes, and tags
+            if 'description' in columns:
+                set_clauses.append('description = ?')
+                values.append(target_task['notes'])
+            if 'notes' in columns:
+                set_clauses.append('notes = ?')
+                values.append(target_task['notes'])
+            if 'tags' in columns:
+                set_clauses.append('tags = ?')
+                values.append(json.dumps(extracted_tags))
+
+            for field in ['title', 'priority', 'status', 'due', 'list_title']:
+                if field in data and field in columns:
+                    set_clauses.append(f'{field} = ?')
+                    values.append(target_task[field])
 
             values.append(task_id)
             query = f"UPDATE tasks SET {', '.join(set_clauses)} WHERE id = ?"
@@ -558,68 +747,83 @@ def update_task(task_id):
             if 'list_title' in data:
                 cursor.execute("DELETE FROM task_lists WHERE task_id = ?", (task_id,))
                 cursor.execute("INSERT INTO task_lists (task_id, list_name) VALUES (?, ?)",
-                             (task_id, target_task['list_title']))
+                             (task_id, new_list_title))
 
             conn.commit()
             conn.close()
-            print(f'[API] Task {task_id} updated in local DB')
+            print(f'[API] Task {task_id} updated in local DB for account {target_account}')
     except Exception as e:
         print(f'[API] Error updating local DB: {e}')
 
-    # Sync to Google Tasks via gtasks CLI
+    # Immediate Sync to Google Tasks via gtasks CLI using target_account
+    synced_to_google = False
     try:
         import sys
+        from pathlib import Path
         gtasks_cli_path = Path(__file__).parent.parent.parent / 'gtasks_cli' / 'src'
         if str(gtasks_cli_path) not in sys.path:
             sys.path.insert(0, str(gtasks_cli_path))
 
         from gtasks_cli.integrations.google_tasks_client import GoogleTasksClient
-        google_client = GoogleTasksClient(account_name='Work')
-        google_client.connect()
+        google_client = GoogleTasksClient(account_name=target_account)
+        if google_client.connect():
+            all_lists = google_client.list_tasklists()
+            new_list_id = '@default'
+            for tl in all_lists:
+                if tl.get('title') == new_list_title:
+                    new_list_id = tl['id']
+                    break
 
-        # Load task list mapping
-        list_map = {}
-        try:
-            conn = sqlite3.connect(str(db_path))
-            cursor = conn.cursor()
-            cursor.execute("SELECT task_id, list_name FROM task_lists")
-            for row in cursor.fetchall():
-                list_map[row[0]] = row[1]
-            conn.close()
-        except:
-            pass
+            from gtasks_cli.models.task import Task as CLITask, TaskStatus, Priority as CLIPriority
 
-        list_name = list_map.get(task_id, target_task.get('list_title', 'default'))
-        list_id = None
+            status_val = target_task.get('status', 'pending')
+            cli_status = TaskStatus.COMPLETED if status_val == 'completed' else TaskStatus.PENDING
 
-        # Resolve list name to Google list ID
-        all_lists = google_client.list_tasklists()
-        for tl in all_lists:
-            if tl['title'] == list_name:
-                list_id = tl['id']
-                break
+            prio_val = target_task.get('priority', 'medium')
+            cli_prio = CLIPriority.HIGH if prio_val == 'high' else CLIPriority.CRITICAL if prio_val == 'critical' else CLIPriority.MEDIUM
 
-        if list_id:
-            # Convert to gtasks Task model
-            from gtasks_cli.models.task import Task, TaskStatus, Priority
-
-            status_map = {'pending': 'needsAction', 'completed': 'completed', 'in_progress': 'needsAction'}
-            google_status = status_map.get(target_task.get('status', 'pending'), 'needsAction')
-
-            task_obj = Task(
+            task_obj = CLITask(
                 id=task_id,
                 title=target_task.get('title', ''),
-                notes=target_task.get('notes', '') or '',
-                status=TaskStatus.PENDING,
-                priority=Priority.MEDIUM,
-                tasklist_id=list_id
+                notes=target_task.get('notes', '') or target_task.get('description', '') or '',
+                due=target_task.get('due'),
+                status=cli_status,
+                priority=cli_prio,
+                tasklist_id=new_list_id
             )
-            google_client.update_task(task_obj, list_id)
-            print(f'[API] Task {task_id} synced to Google')
-    except Exception as e:
-        print(f'[API] Error syncing to Google: {e}')
 
-    return jsonify({'success': True, 'task': target_task})
+            # If task list changed, move task (create in new list, delete from old list)
+            if 'list_title' in data and old_list_title != new_list_title:
+                old_list_id = '@default'
+                for tl in all_lists:
+                    if tl.get('title') == old_list_title:
+                        old_list_id = tl['id']
+                        break
+                google_client.delete_task(task_id, old_list_id)
+                created = google_client.create_task(task_obj)
+                if created:
+                    synced_to_google = True
+                    print(f'[API] Task {task_id} moved from list "{old_list_title}" to "{new_list_title}" on Google Tasks')
+            else:
+                updated = google_client.update_task(task_obj, new_list_id)
+                if updated:
+                    synced_to_google = True
+                    print(f'[API] Task {task_id} synced to Google Tasks in list "{new_list_title}"')
+    except Exception as e:
+        print(f'[API] Error syncing task update to Google Tasks: {e}')
+
+    # Trigger background sync to Turso Remote DB
+    try:
+        turso_sync_thread = threading.Thread(
+            target=_sync_task_to_turso_background,
+            args=(task_id, target_account),
+            daemon=True
+        )
+        turso_sync_thread.start()
+    except Exception as e:
+        print(f'[API] Error triggering Turso sync: {e}')
+
+    return jsonify({'success': True, 'task': target_task, 'synced_to_google': synced_to_google})
 
 
 @api.route('/health')

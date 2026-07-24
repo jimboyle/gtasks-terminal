@@ -221,9 +221,9 @@ class SQLiteStorage:
                         'completed_at': row[13],
                         'estimated_duration': row[14],
                         'actual_duration': row[15],
-                        'is_recurring': row[16],
+                        'is_recurring': bool(row[16]) if row[16] is not None else False,
                         'recurring_task_id': row[17],
-                        'tasklist_id': row[18],
+                        'tasklist_id': row[18] or "@default",
                         'list_name': row[19] if len(row) > 19 else None
                     }
                     tasks.append(task)

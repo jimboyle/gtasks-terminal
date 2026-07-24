@@ -273,9 +273,11 @@ class DataManager:
             if not task_data['list_title']:
                 task_data['list_title'] = 'Tasks'
             
-            # Extract hybrid tags
+            # Extract hybrid tags without duplicating description and notes
+            notes_content = task_data['notes'] if task_data['notes'] else task_data['description']
+            extra_content = task_data['description'] if task_data['description'] and task_data['description'] != task_data['notes'] else ''
             task_data['hybrid_tags'] = self._extract_tags(
-                f"{task_data['title']} {task_data['description']} {task_data['notes']}"
+                f"{task_data['title']} {notes_content} {extra_content}".strip()
             )
             
             # Calculate priority from asterisks
