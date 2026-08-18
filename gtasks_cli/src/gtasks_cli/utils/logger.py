@@ -6,6 +6,10 @@ import logging
 import os
 from pathlib import Path
 
+# Quiet noisy third-party loggers (Google API client cache chatter, etc.)
+for _noisy in ('googleapiclient.discovery_cache', 'googleapiclient', 'google.auth', 'LiteLLM', 'litellm'):
+    logging.getLogger(_noisy).setLevel(logging.ERROR)
+
 
 def setup_logger(name='gtasks'):
     """
@@ -23,10 +27,17 @@ def setup_logger(name='gtasks'):
     
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    
+    # Don't re-emit through any root handler (kills duplicate rich-formatted console lines)
+    logger.propagate = False
+
     # Avoid adding handlers multiple times
     if logger.handlers:
         return logger
+
+    # Console verbosity: default WARNING (quiet). Override via GTASKS_LOG_LEVEL=INFO|DEBUG|ERROR.
+    console_level = getattr(
+        logging, os.environ.get('GTASKS_LOG_LEVEL', 'WARNING').upper(), logging.WARNING
+    )
     
     # Log directory
     log_dir = Path.home() / '.gtasks' / 'logs'
@@ -37,9 +48,9 @@ def setup_logger(name='gtasks'):
         '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
     )
     
-    # Console handler (INFO)
+    # Console handler (quiet by default; see GTASKS_LOG_LEVEL above)
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(console_level)
     console.setFormatter(formatter)
     
     # File handler with rotation (DEBUG)

@@ -155,7 +155,8 @@ class GTasksTools:
         output = []
         for t in tasks[:limit]:
             due_str = f" Due: {t.due}" if t.due else ""
-            output.append(f"- [ID: {t.id}] [{t.status.value}] {t.title}{due_str}")
+            status_str = t.status.value if hasattr(t.status, 'value') else t.status
+            output.append(f"- [ID: {t.id}] [{status_str}] {t.title}{due_str}")
             
         if not output:
             return "No tasks found matching criteria."
@@ -174,7 +175,8 @@ class GTasksTools:
         output = []
         for t in results[:20]:
             due_str = f" Due: {t.due}" if t.due else ""
-            output.append(f"- [ID: {t.id}] [{t.status.value}] {t.title}{due_str}")
+            status_str = t.status.value if hasattr(t.status, 'value') else t.status
+            output.append(f"- [ID: {t.id}] [{status_str}] {t.title}{due_str}")
             
         if not output:
             return f"No tasks found for query: {query}"

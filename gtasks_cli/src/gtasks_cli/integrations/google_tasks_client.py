@@ -229,7 +229,8 @@ class GoogleTasksClient:
             
             # Determine tasklist
             tasklist_id = getattr(task, 'tasklist_id', '@default')
-            if not tasklist_id:
+            # Local default tasklist is stored as 'default'/'My Tasks'; Google's API id is '@default'
+            if not tasklist_id or tasklist_id in ('default', 'My Tasks'):
                 tasklist_id = '@default'
             
             logger.debug(f"Creating task in tasklist: {tasklist_id}")
